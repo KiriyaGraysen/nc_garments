@@ -1,0 +1,133 @@
+<?php
+// Get the current filename (e.g., 'index.php', 'inventory.php') to highlight the active menu link
+$current_page = basename($_SERVER['PHP_SELF']);
+?>
+<!DOCTYPE html>
+<html lang="en" id="html-root" class="transition-colors duration-500">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo isset($page_title) ? $page_title : 'NC Garments System'; ?></title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        }
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
+
+    <style>
+        /* 1. HIDE NUMBER INPUT SPINNERS GLOBALLY */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* 2. FIX CALENDAR ICON IN DARK MODE */
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(100%);
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="flex h-screen bg-gray-50 dark:bg-zinc-950 font-sans overflow-hidden transition-colors duration-500 antialiased">
+
+    <aside class="w-72 bg-zinc-900 dark:bg-black text-white flex flex-col shrink-0 transition-colors duration-500 border-r border-transparent dark:border-zinc-800 z-20">
+        
+        <div class="h-16 flex items-center px-6 shrink-0 border-b border-zinc-800 dark:border-zinc-900 relative overflow-hidden">
+            <div class="absolute left-0 top-0 w-32 h-32 bg-pink-600/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="flex items-baseline gap-2 relative z-10">
+                <span class="text-pink-600 font-serif italic text-3xl leading-none">NC</span>
+                <span class="text-lg font-extrabold tracking-[0.15em] uppercase">Garments</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            
+            <a href="index.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'index.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-house w-5 text-center transition-colors <?php echo ($current_page == 'index.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Dashboard</span>
+            </a>
+
+            <a href="orders.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'orders.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-scissors w-5 text-center transition-colors <?php echo ($current_page == 'orders.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Orders & Projects</span>
+            </a>
+
+            <a href="inventory.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'inventory.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-boxes-stacked w-5 text-center transition-colors <?php echo ($current_page == 'inventory.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Inventory</span>
+            </a>
+
+            <a href="customers.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'customers.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-users w-5 text-center transition-colors <?php echo ($current_page == 'customers.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Customers & Payments</span>
+            </a>
+            
+            <a href="staff.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'staff.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-shield-halved w-5 text-center transition-colors <?php echo ($current_page == 'staff.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Staff Access</span>
+            </a>
+            
+        </nav>
+
+        <div class="p-4 mt-auto shrink-0 border-t border-zinc-800 dark:border-zinc-900">
+            <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'settings.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-gear w-5 text-center transition-colors <?php echo ($current_page == 'settings.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Settings</span>
+            </a>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-zinc-950 transition-colors duration-500">
+        
+        <header class="h-16 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between px-8 shrink-0 transition-colors duration-500 z-10 shadow-sm shadow-gray-100/50 dark:shadow-none">
+            
+            <div class="flex-1 max-w-lg relative group">
+                <i class="fa-solid fa-search absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors"></i>
+                <input type="text" placeholder="Search orders, customers, or inventory..." 
+                       class="w-full pl-8 pr-4 py-2 bg-transparent border-none text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-0 transition-colors">
+            </div>
+
+            <div class="flex items-center gap-6">
+                
+                <button id="theme-toggle" class="text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none" title="Toggle Dark Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+
+                <button class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-pink-600 ring-2 ring-white dark:ring-zinc-900"></span>
+                </button>
+
+                <div class="h-6 w-px bg-gray-200 dark:bg-zinc-800"></div>
+
+                <button class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
+                    <div class="h-8 w-8 rounded-full bg-pink-600 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-pink-600/20">JJ</div>
+                    <div class="hidden md:flex flex-col items-start leading-tight">
+                        <span class="text-sm font-bold text-gray-900 dark:text-white">Jezel Juanillo</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Superadmin</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down text-gray-400 text-xs hidden md:block ml-1"></i>
+                </button>
+            </div>
+        </header>
