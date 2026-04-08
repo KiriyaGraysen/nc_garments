@@ -9,6 +9,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? $page_title : 'NC Garments System'; ?></title>
     
+    <!-- tailwind v4 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -49,7 +50,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </script>
 </head>
 <body class="flex h-screen bg-gray-50 dark:bg-zinc-950 font-sans overflow-hidden transition-colors duration-500 antialiased">
-
+    
+    <!-- Sidebar and topbar -->
     <aside class="w-72 bg-zinc-900 dark:bg-black text-white flex flex-col shrink-0 transition-colors duration-500 border-r border-transparent dark:border-zinc-800 z-20">
         
         <div class="h-16 flex items-center px-6 shrink-0 border-b border-zinc-800 dark:border-zinc-900 relative overflow-hidden">
@@ -60,7 +62,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span class="text-lg font-extrabold tracking-[0.15em] uppercase">Garments</span>
             </div>
         </div>
-
+        
+        <!-- Nav links -->
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             
             <a href="index.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'index.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
@@ -68,7 +71,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span class="font-bold text-sm tracking-wide">Dashboard</span>
             </a>
 
-            <a href="orders.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'orders.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+            <a href="projects.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'orders.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-scissors w-5 text-center transition-colors <?php echo ($current_page == 'orders.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Orders & Projects</span>
             </a>
@@ -89,7 +92,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             
         </nav>
-
+        
+        <!-- Settings -->
         <div class="p-4 mt-auto shrink-0 border-t border-zinc-800 dark:border-zinc-900">
             <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'settings.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-gear w-5 text-center transition-colors <?php echo ($current_page == 'settings.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
@@ -102,6 +106,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <header class="h-16 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between px-8 shrink-0 transition-colors duration-500 z-10 shadow-sm shadow-gray-100/50 dark:shadow-none">
             
+            <!-- Searchbar -->
             <div class="flex-1 max-w-lg relative group">
                 <i class="fa-solid fa-search absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors"></i>
                 <input type="text" placeholder="Search orders, customers, or inventory..." 
@@ -110,10 +115,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
             <div class="flex items-center gap-6">
                 
+                <!-- Dark mode and light mode toggle icon -->
                 <button id="theme-toggle" class="text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none" title="Toggle Dark Mode">
                     <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
                 </button>
-
+                
+                <!-- Notification bell icon -->
                 <button class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
                     <i class="fa-regular fa-bell text-xl"></i>
                     <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-pink-600 ring-2 ring-white dark:ring-zinc-900"></span>

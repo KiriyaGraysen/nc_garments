@@ -1,9 +1,9 @@
 <?php 
 
-// 1. Set the dynamic page title
+// Set the dynamic page title
 $page_title = "Dashboard | NC Garments";
 
-// 2. Load the Header (Sidebar and Top Bar)
+// Load the Header (Sidebar and Top Bar)
 include 'includes/header.php'; 
 ?>
 
