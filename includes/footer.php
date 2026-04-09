@@ -31,6 +31,17 @@
                 }
             }
         }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            // Toggle the -translate-x-full class to slide the sidebar in and out
+            sidebar.classList.toggle('-translate-x-full');
+            
+            // Toggle the hidden class to show/hide the dark overlay background
+            overlay.classList.toggle('hidden');
+        }
     </script>
 </body>
 </html>
