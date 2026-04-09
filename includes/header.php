@@ -1,6 +1,6 @@
 <?php
 // connects all page to the database
-require_once('../config/database.php');
+require_once('config/database.php');
 
 // Get the current filename (e.g., 'index.php', 'inventory.php') to highlight the active menu link
 $current_page = basename($_SERVER['PHP_SELF']);
