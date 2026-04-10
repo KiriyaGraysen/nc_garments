@@ -1,6 +1,58 @@
 <?php
+session_start();
+
+if (empty($_SESSION['admin_id'])) {
+    header('Location: ../login.php');
+    exit();
+}
+
 // connects all page to the database
 require_once('config/database.php');
+
+$stmt = $conn->prepare("
+    SELECT full_name, username, role
+    FROM admin
+    WHERE admin_id = ?
+");
+$stmt->bind_param("s", $_SESSION['admin_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+$stmt->close();
+
+function generate_initials($name) {
+    // 1. Remove any accidental spaces at the start or end
+    $name = trim($name);
+    
+    // Fallback if the name is somehow empty
+    if (empty($name)) {
+        return "U"; // 'U' for User
+    }
+
+    // 2. Split the name into an array of words
+    $words = explode(" ", $name);
+    $word_count = count($words);
+
+    if ($word_count >= 2) {
+        // CONDITION A: 2 or more words (e.g., "Sherwin Samonte" -> "SS")
+        // Grab the first letter of the first word
+        $first_letter = substr($words[0], 0, 1);
+        // Grab the first letter of the very last word (ignores middle names)
+        $last_letter = substr(end($words), 0, 1);
+        
+        $initials = $first_letter . $last_letter;
+    } else {
+        // CONDITION B: Only 1 word (e.g., "Admin" -> "AD")
+        // Grab the first two letters of that single word
+        $initials = substr($name, 0, 2);
+    }
+
+    // 3. Return it in uppercase so it always looks good in the avatar
+    return strtoupper($initials);
+}
+
+$admin_initials = generate_initials(htmlspecialchars($admin['full_name']));
 
 // Get the current filename (e.g., 'index.php', 'inventory.php') to highlight the active menu link
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -146,13 +198,41 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
                 <div class="hidden md:block h-6 w-px bg-gray-200 dark:bg-zinc-800"></div>
 
-                <button class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
-                    <div class="h-8 w-8 rounded-full bg-pink-600 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-pink-600/20">JJ</div>
-                    <div class="hidden md:flex flex-col items-start leading-tight">
-                        <span class="text-sm font-bold text-gray-900 dark:text-white">Jezel Juanillo</span>
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Superadmin</span>
+                <div class="relative">
+                    <button onclick="toggleUserMenu()" id="user-menu-btn" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none">
+                        <div class="h-8 w-8 rounded-full bg-pink-600 flex items-center justify-center text-white font-bold text-xs shadow-md shadow-pink-600/20"><?php echo $admin_initials; ?></div>
+                        <div class="hidden md:flex flex-col items-start leading-tight">
+                            <span class="text-sm font-bold text-gray-900 dark:text-white"><?php echo htmlspecialchars($admin['full_name']); ?></span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><?php echo htmlspecialchars($admin['role']); ?></span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs hidden md:block ml-1 transition-transform duration-300" id="user-menu-arrow"></i>
+                    </button>
+                
+                    <div id="user-dropdown" class="hidden absolute right-0 top-full mt-3 w-56 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden transition-all origin-top-right">
+                        
+                        <div class="px-4 py-3 border-b border-gray-50 dark:border-zinc-800/50">
+                            <p class="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Signed in as</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5"><?php echo htmlspecialchars($admin['username']); ?></p>
+                        </div>
+                
+                        <div class="py-1">
+                            <a href="profile.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
+                                <i class="fa-regular fa-id-badge w-4 text-center"></i> My Profile
+                            </a>
+                            <a href="history.php?user=me" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
+                                <i class="fa-solid fa-clock-rotate-left w-4 text-center"></i> My Activity Log
+                            </a>
+                            <a href="manual.pdf" target="_blank" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
+                                <i class="fa-regular fa-circle-question w-4 text-center"></i> User Manual
+                            </a>
+                        </div>
+                
+                        <div class="py-1 border-t border-gray-50 dark:border-zinc-800/50 bg-gray-50/50 dark:bg-zinc-950/50">
+                            <a href="../actions/logout.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                                <i class="fa-solid fa-right-from-bracket w-4 text-center"></i> Secure Logout
+                            </a>
+                        </div>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-gray-400 text-xs hidden md:block ml-1"></i>
-                </button>
+                </div>
             </div>
         </header>

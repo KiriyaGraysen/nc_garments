@@ -149,11 +149,11 @@ require_once('config/database.php');
                 }
         
             } catch (error) {
-                // If the network dies or the PHP file crashes, catch the error!
-                console.error('System Error:', error);
-                alert('Could not connect to the server. Please check your connection.');
+                // This will pop up the exact technical error message
+                alert('System Error: ' + error.message);
                 resetButton();
             }
+
         
             // Helper function to put the button back to normal if login fails
             function resetButton() {

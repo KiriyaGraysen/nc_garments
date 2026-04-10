@@ -1,7 +1,4 @@
-<?php 
-session_start();
-require_once 'config/database.php';
-
+<?php
 $page_title = "History & Changes | NC Garments";
 
 include 'includes/header.php'; 

@@ -1,8 +1,51 @@
-<?php 
-session_start();
-require_once 'config/database.php';
-
+<?php
 $page_title = "Staff Access | NC Garments";
+require_once('config/database.php');
+
+$stmt = $conn->prepare("
+    SELECT full_name, username, role, status, last_login
+    FROM admin
+    ORDER BY full_name ASC
+");
+$stmt->execute();
+$staff_result = $stmt->get_result();
+
+function format_last_login($datetime_string) {
+    if (empty($datetime_string)) {
+        return "Hasn't logged in yet";
+    }
+    
+    // 1. Convert the raw string into a PHP DateTime object
+    // Note: str_replace removes the comma if your database actually stores "2026-04-10, 13:01:30"
+    $clean_string = str_replace(',', '', $datetime_string);
+    $target_date = new DateTime($clean_string);
+    
+    // 2. Get today's and yesterday's dates for comparison (ignoring the time)
+    $today = new DateTime('today');
+    $yesterday = new DateTime('yesterday');
+    
+    // Create a clone of the target date and strip its time to strictly compare the day
+    $compare_date = clone $target_date;
+    $compare_date->setTime(0, 0, 0);
+    
+    // 3. Format the time part (e.g., "01:01 PM")
+    $formatted_time = $target_date->format('h:i A');
+    
+    // 4. Return the correct string based on how old the date is
+    if ($compare_date == $today) {
+        return "Today, " . $formatted_time;
+        
+    } elseif ($compare_date == $yesterday) {
+        return "Yesterday, " . $formatted_time;
+        
+    } else {
+        // For anything older, return "Apr 10, 2026"
+        return $target_date->format('M j, Y'); 
+        
+        // If you specifically wanted "Apr 10 26", you would use:
+        // return $target_date->format('M j y');
+    }
+}
 
 include 'includes/header.php'; 
 ?>
@@ -56,110 +99,70 @@ include 'includes/header.php';
                 
                 <tbody class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     
-                    <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="h-10 w-10 rounded-full bg-pink-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-pink-600/20">
-                                    JJ
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-500 transition-colors">Jezel Juanillo</div>
-                                    <div class="text-xs font-bold tracking-wider text-gray-400 dark:text-zinc-500 mt-0.5">@jezel_admin</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-pink-200 dark:border-pink-500/20 flex items-center w-max gap-1.5">
-                                <i class="fa-solid fa-crown text-[10px]"></i> Superadmin
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-1.5">
-                                <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
-                                <span class="font-bold text-gray-900 dark:text-white text-xs">Active</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-gray-900 dark:text-white font-bold text-xs">Online Now</div>
-                            <div class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 mt-1 uppercase tracking-wider">Current Session</div>
-                        </td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                            <button disabled class="bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-800 text-gray-400 dark:text-zinc-600 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold cursor-not-allowed shadow-sm">
-                                Cannot Edit Self
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="h-10 w-10 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 flex items-center justify-center font-extrabold text-sm border border-gray-200 dark:border-zinc-700">
-                                    MC
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-500 transition-colors">Mark Cruz</div>
-                                    <div class="text-xs font-bold tracking-wider text-gray-400 dark:text-zinc-500 mt-0.5">@staff_mark</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-gray-200 dark:border-zinc-700 flex items-center w-max gap-1.5">
-                                <i class="fa-solid fa-user text-[10px]"></i> General Staff
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-1.5">
-                                <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
-                                <span class="font-bold text-gray-900 dark:text-white text-xs">Active</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-gray-900 dark:text-white font-bold text-xs">Today, 8:45 AM</div>
-                            <div class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 mt-1 uppercase tracking-wider">MacBook Pro - Chrome</div>
-                        </td>
-                        <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-2">
-                            <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-200 dark:hover:border-pink-900/50 px-3 py-1.5 rounded-lg transition-all text-xs font-bold cursor-pointer shadow-sm">
-                                <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
-                            </button>
-                            <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-800 px-3 py-1.5 rounded-lg transition-all text-xs font-bold cursor-pointer shadow-sm">
-                                <i class="fa-solid fa-ban mr-1"></i> Revoke
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group opacity-75">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="h-10 w-10 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-600 flex items-center justify-center font-extrabold text-sm border border-gray-200 dark:border-zinc-700">
-                                    AL
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-500 dark:text-zinc-400 transition-colors line-through">Ana Lopez</div>
-                                    <div class="text-xs font-bold tracking-wider text-gray-400 dark:text-zinc-600 mt-0.5">@staff_ana</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="bg-gray-50 text-gray-400 dark:bg-zinc-800/50 dark:text-zinc-500 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-gray-100 dark:border-zinc-800 flex items-center w-max gap-1.5">
-                                <i class="fa-solid fa-user text-[10px]"></i> General Staff
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-1.5">
-                                <div class="h-2 w-2 rounded-full bg-rose-500"></div>
-                                <span class="font-bold text-rose-600 dark:text-rose-500 text-xs">Access Revoked</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-gray-500 dark:text-zinc-400 font-bold text-xs">Mar 15, 2026</div>
-                            <div class="text-[10px] font-bold text-gray-400 dark:text-zinc-600 mt-1 uppercase tracking-wider">Account Locked</div>
-                        </td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                            <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold cursor-pointer shadow-sm">
-                                <i class="fa-solid fa-unlock-keyhole mr-1"></i> Restore Access
-                            </button>
-                        </td>
-                    </tr>
+                    <?php
+                    while ($staff = $staff_result->fetch_assoc()) {
+                        $raw_login_date = $staff['last_login'];
+                        $formatted_login = format_last_login($raw_login_date);
+                        
+                        $full_name = htmlspecialchars($staff['full_name']);
+                        $user_initials = generate_initials($full_name);
+                        $user = htmlspecialchars($staff['username']);
+                        $status = htmlspecialchars($staff['status']);
+                        $role = htmlspecialchars($staff['role']);
+                        
+                        echo '
+                            <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-full bg-pink-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-pink-600/20">
+                                            ' . $user_initials . '
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-500 transition-colors">' . $full_name . '</div>
+                                            <div class="text-xs font-bold tracking-wider text-gray-400 dark:text-zinc-500 mt-0.5">@' . $user . '</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="' . ($role === 'admin' ? 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20' : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 border-gray-200 dark:border-zinc-700') . ' text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center w-max gap-1.5">
+                                        <i class="fa-solid ' . ($role === 'admin' ? 'fa-crown' : 'fa-user') . ' text-[10px]"></i>' . $role . '
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="h-2 w-2 rounded-full ' . ($status === 'active' ? 'bg-emerald-500' : 'bg-rose-500') . '"></div>
+                                        <span class="font-bold text-gray-900 dark:text-white text-xs first-letter:uppercase">' . $status . '</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-gray-900 dark:text-white font-bold text-xs">' . htmlspecialchars($formatted_login) . '</div>
+                                </td>
+                        ';
+                        
+                        if ($status === 'active') {
+                            echo '
+                                <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-2">
+                                    <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-200 dark:hover:border-pink-900/50 px-3 py-1.5 rounded-lg transition-all text-xs font-bold cursor-pointer shadow-sm">
+                                        <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
+                                    </button>
+                                    <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-800 px-3 py-1.5 rounded-lg transition-all text-xs font-bold cursor-pointer shadow-sm">
+                                        <i class="fa-solid fa-ban mr-1"></i> Revoke
+                                    </button>
+                                </td>
+                            ';
+                        } else {
+                            echo '
+                                <td class="px-6 py-4 text-right text-sm font-medium">
+                                    <button class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold cursor-pointer shadow-sm">
+                                        <i class="fa-solid fa-unlock-keyhole mr-1"></i> Restore Access
+                                    </button>
+                                </td>
+                            ';
+                        }
+                        
+                        echo '</tr>';
+                    }
+                    ?>
 
                 </tbody>
             </table>

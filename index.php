@@ -1,7 +1,4 @@
-<?php 
-session_start();
-require_once 'config/database.php';
-
+<?php
 // Set the dynamic page title
 $page_title = "Dashboard | NC Garments";
 

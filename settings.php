@@ -1,7 +1,4 @@
-<?php 
-session_start();
-require_once 'config/database.php';
-
+<?php
 $page_title = "Settings | NC Garments";
 
 include 'includes/header.php'; 

@@ -1,12 +1,12 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-
+date_default_timezone_set('Asia/Manila');
 require_once('../config/database.php');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([
-        "success" => true,
+        "success" => false,
         "message" => "Invalid request method."
     ]);
     exit();
@@ -39,6 +39,15 @@ if ($result->num_rows === 1) {
     $admin = $result->fetch_assoc();
     
     if(password_verify($input_password, $admin['password_hash'])) {
+        $last_login = date("Y-m-d H:i:s");
+        $update_stmt = $conn->prepare("
+            UPDATE admin
+            SET last_login = ?
+            WHERE admin_id = ?"
+        );
+        $update_stmt->bind_param("si", $last_login, $admin['admin_id']);
+        $update_stmt->execute();
+        
         $_SESSION['admin_id'] = $admin['admin_id'];
         $_SESSION['full_name'] = $admin['full_name'];
         $_SESSION['role'] = $admin['role'];
@@ -47,6 +56,8 @@ if ($result->num_rows === 1) {
             'success' => true,
             'message' => 'Login successful.'
         ]);
+        
+        $update_stmt->close();
     } else {
         echo json_encode([
             'success' => false, 'message' => 'Invalid username or password.'
