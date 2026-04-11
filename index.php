@@ -62,7 +62,7 @@ include 'includes/header.php';
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-zinc-900/80 px-5 py-3 border-t border-gray-50 dark:border-zinc-800 transition-colors duration-500">
-                            <a href="#" class="text-xs font-bold text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 flex items-center justify-between">
+                            <a href="projects.php" class="text-xs font-bold text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 flex items-center justify-between">
                                 View all <i class="fa-solid fa-arrow-right text-[10px]"></i>
                             </a>
                         </div>
@@ -101,7 +101,7 @@ include 'includes/header.php';
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-zinc-900/80 px-5 py-3 border-t border-gray-50 dark:border-zinc-800 transition-colors duration-500">
-                            <a href="#" class="text-xs font-bold text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 flex items-center justify-between">
+                            <a href="inventory.php" class="text-xs font-bold text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 flex items-center justify-between">
                                 Check inventory <i class="fa-solid fa-arrow-right text-[10px]"></i>
                             </a>
                         </div>

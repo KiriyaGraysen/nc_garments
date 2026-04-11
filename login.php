@@ -9,6 +9,7 @@ require_once('config/database.php');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Access | Needle Class ERP</title>
+    <link rel="icon" href="assets/images/icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     
