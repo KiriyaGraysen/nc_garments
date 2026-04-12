@@ -161,10 +161,10 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <div id="create-project-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div id="create-project-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCreateProjectModal()"></div>
         
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
             
             <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Create New Project</h3>
@@ -176,18 +176,86 @@ include 'includes/header.php';
             <div class="p-6 overflow-y-auto flex-1">
                 <form id="create-project-form" class="space-y-6">
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="col-span-2">
                             <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Project Name / Description</label>
-                            <input type="text" placeholder="e.g., LGU Polo Shirts" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                            <input type="text" id="cp_project_name" placeholder="e.g., LGU Polo Shirts" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Quantity Needed</label>
-                            <input type="number" min="1" value="1" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
-                        </div>
-                        <div>
+                        <div class="col-span-2 md:col-span-1">
                             <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Due Date</label>
-                            <input type="date" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
+                            <input type="date" id="cp_due_date" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-100 dark:border-zinc-800">
+
+                    <div class="bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">Quantity & Sizing</label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="enable-sizing-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleSizingModule()">
+                                <span class="text-xs font-bold text-pink-600 dark:text-pink-500">Specify Sizes / Measurements</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <div class="w-1/3">
+                                <label class="block text-[10px] font-bold text-gray-500 dark:text-zinc-500 mb-1 uppercase">Total Quantity</label>
+                                <input type="number" id="cp_total_quantity" min="1" value="1" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold shadow-sm">
+                            </div>
+                            <div id="qty-warning" class="w-2/3 hidden">
+                                <p class="text-[10px] font-semibold text-amber-600 dark:text-amber-500"><i class="fa-solid fa-circle-info"></i> Quantity is locked. It will auto-calculate based on your Standard Sizing breakdown below.</p>
+                            </div>
+                        </div>
+
+                        <div id="sizing-area" class="hidden space-y-4 pt-2 border-t border-gray-200 dark:border-zinc-800">
+                            
+                            <div class="flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="sizing_type" value="standard" checked onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500">
+                                    <span class="text-sm font-bold text-gray-700 dark:text-zinc-300">Standard Sizes (S, M, L)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="sizing_type" value="custom" onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500">
+                                    <span class="text-sm font-bold text-gray-700 dark:text-zinc-300">Custom Measurements</span>
+                                </label>
+                            </div>
+
+                            <div id="standard-sizing-wrapper" class="space-y-2">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                            <th class="pb-2 w-2/3">Size Label (e.g., Small, 32, XL)</th>
+                                            <th class="pb-2 w-1/4">Qty</th>
+                                            <th class="pb-2 w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="standard-sizing-tbody">
+                                        </tbody>
+                                </table>
+                                <button type="button" onclick="addStandardSizeRow()" class="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                    <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
+                                </button>
+                            </div>
+
+                            <div id="custom-sizing-wrapper" class="hidden space-y-2">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                            <th class="pb-2 w-1/2">Body Part (e.g., Waist, Chest)</th>
+                                            <th class="pb-2 w-1/4">Measurement</th>
+                                            <th class="pb-2 w-1/4">Unit</th>
+                                            <th class="pb-2 w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="custom-sizing-tbody">
+                                        </tbody>
+                                </table>
+                                <button type="button" onclick="addCustomMeasureRow()" class="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                    <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Measurement
+                                </button>
+                            </div>
+
                         </div>
                     </div>
 
@@ -229,7 +297,7 @@ include 'includes/header.php';
                         </div>
                         
                         <div id="existing-customer-div">
-                            <select class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-sm">
+                            <select id="cp_existing_customer" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-sm">
                                 <option value="">-- Choose Existing Client --</option>
                                 <?php foreach($customers as $c): ?>
                                     <option value="<?= $c['customer_id'] ?>"><?= htmlspecialchars($c['full_name']) ?></option>
@@ -238,32 +306,22 @@ include 'includes/header.php';
                         </div>
 
                         <div id="new-customer-div" class="hidden space-y-4">
-                            <input type="text" placeholder="Full Name / Organization" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                            <input type="text" id="cp_new_cust_name" placeholder="Full Name / Organization" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
                             <div class="grid grid-cols-2 gap-4">
-                                <input type="text" placeholder="Contact Number" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
-                                <input type="text" placeholder="Address (Optional)" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                                <input type="text" id="cp_new_cust_contact" placeholder="Contact Number" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                                <input type="text" id="cp_new_cust_address" placeholder="Address (Optional)" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
                             </div>
                         </div>
                     </div>
 
                     <div id="section-internal" class="hidden space-y-4 bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
                         <label class="block text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide">Target Product (Finished Goods)</label>
-                        <select class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-sm font-medium shadow-sm">
+                        <select id="cp_target_product" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-sm font-medium shadow-sm">
                             <option value="">-- Choose Product to Restock --</option>
                             <?php foreach($products as $p): ?>
                                 <option value="<?= $p['product_id'] ?>"><?= htmlspecialchars($p['product_name']) ?> (Size: <?= htmlspecialchars($p['size']) ?>)</option>
                             <?php endforeach; ?>
                         </select>
-                        <p class="text-[10px] font-semibold text-amber-600 dark:text-amber-500"><i class="fa-solid fa-circle-info"></i> Customer ID will be set to NULL automatically.</p>
-                    </div>
-
-                    <div class="bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-100 dark:border-zinc-800">
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Agreed Price (Customer Charge)</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 font-bold text-sm">₱</span>
-                            <input type="number" step="0.01" value="0.00" class="w-full pl-8 pr-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold shadow-sm">
-                        </div>
-                        <p class="text-[10px] font-semibold text-gray-500 dark:text-zinc-400 mt-2">Leave as 0.00 if you need to calculate the Raw Material Cost first.</p>
                     </div>
 
                 </form>
@@ -273,19 +331,15 @@ include 'includes/header.php';
                 <button type="button" onclick="closeCreateProjectModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">
                     Cancel
                 </button>
-                <button type="button" onclick="submitNewProject(false)" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-200 px-5 py-2.5 rounded-xl transition-all text-sm font-bold shadow-sm focus:outline-none">
-                    Save & Close
+                <button type="button" onclick="submitNewProject(false)" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-5 py-2.5 rounded-xl transition-all text-sm font-bold shadow-sm focus:outline-none">
+                    Save Only
                 </button>
-                
                 <button type="button" onclick="submitNewProject(true)" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 focus:outline-none flex items-center gap-2">
                     Save & Proceed to Costing <i class="fa-solid fa-arrow-right"></i>
                 </button>
-
             </div>
-
         </div>
     </div>
-
 
     <div id="costing-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCostingModal()"></div>
@@ -344,7 +398,9 @@ include 'includes/header.php';
 </main>
 
 <script>
-    // --- CREATE PROJECT WIZARD LOGIC ---
+    // ==========================================
+    // 1. CREATE PROJECT WIZARD LOGIC
+    // ==========================================
     function openCreateProjectModal() {
         document.getElementById('create-project-modal').classList.remove('hidden');
     }
@@ -380,18 +436,149 @@ include 'includes/header.php';
             newDiv.classList.add('hidden');
         }
     }
-    
-    // --- SUBMIT NEW PROJECT WIZARD TO BACKEND ---
+
+    // ==========================================
+    // 2. NEW: SIZING & QUANTITY MODULE LOGIC
+    // ==========================================
+    function toggleSizingModule() {
+        const isChecked = document.getElementById('enable-sizing-toggle').checked;
+        const sizingArea = document.getElementById('sizing-area');
+        
+        if (isChecked) {
+            sizingArea.classList.remove('hidden');
+            const type = document.querySelector('input[name="sizing_type"]:checked').value;
+            if(type === 'standard' && document.getElementById('standard-sizing-tbody').children.length === 0) addStandardSizeRow();
+            if(type === 'custom' && document.getElementById('custom-sizing-tbody').children.length === 0) addCustomMeasureRow();
+            switchSizingType(); 
+        } else {
+            sizingArea.classList.add('hidden');
+            const qtyInput = document.getElementById('cp_total_quantity');
+            qtyInput.readOnly = false;
+            qtyInput.classList.remove('bg-gray-100', 'text-gray-500');
+            document.getElementById('qty-warning').classList.add('hidden');
+        }
+    }
+
+    function switchSizingType() {
+        const type = document.querySelector('input[name="sizing_type"]:checked').value;
+        const standardWrapper = document.getElementById('standard-sizing-wrapper');
+        const customWrapper = document.getElementById('custom-sizing-wrapper');
+        const qtyInput = document.getElementById('cp_total_quantity');
+        const qtyWarning = document.getElementById('qty-warning');
+
+        if (type === 'standard') {
+            standardWrapper.classList.remove('hidden');
+            customWrapper.classList.add('hidden');
+            qtyInput.readOnly = true;
+            qtyInput.classList.add('bg-gray-100', 'text-gray-500');
+            qtyWarning.classList.remove('hidden');
+            calculateTotalStandardQuantity();
+        } else {
+            standardWrapper.classList.add('hidden');
+            customWrapper.classList.remove('hidden');
+            qtyInput.readOnly = false;
+            qtyInput.classList.remove('bg-gray-100', 'text-gray-500');
+            qtyWarning.classList.add('hidden');
+        }
+    }
+
+    function addStandardSizeRow() {
+        const tbody = document.getElementById('standard-sizing-tbody');
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
+        tr.innerHTML = `
+            <td class="py-2 pr-2">
+                <input type="text" placeholder="e.g., Medium" class="sizing-label w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500">
+            </td>
+            <td class="py-2 pr-2">
+                <input type="number" min="1" value="1" class="sizing-qty w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500" oninput="calculateTotalStandardQuantity()">
+            </td>
+            <td class="py-2 text-right">
+                <button type="button" onclick="this.closest('tr').remove(); calculateTotalStandardQuantity();" class="text-gray-400 hover:text-rose-500 focus:outline-none p-1">
+                    <i class="fa-solid fa-trash text-[10px]"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        calculateTotalStandardQuantity();
+    }
+
+    function calculateTotalStandardQuantity() {
+        if (!document.getElementById('enable-sizing-toggle').checked) return;
+        if (document.querySelector('input[name="sizing_type"]:checked').value !== 'standard') return;
+        
+        let total = 0;
+        document.querySelectorAll('#standard-sizing-tbody .sizing-qty').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        
+        document.getElementById('cp_total_quantity').value = total > 0 ? total : 1;
+    }
+
+    function addCustomMeasureRow() {
+        const tbody = document.getElementById('custom-sizing-tbody');
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
+        tr.innerHTML = `
+            <td class="py-2 pr-2">
+                <input type="text" placeholder="e.g., Chest" class="measure-part w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500">
+            </td>
+            <td class="py-2 pr-2">
+                <input type="number" step="0.25" placeholder="0.00" class="measure-val w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500">
+            </td>
+            <td class="py-2 pr-2">
+                <select class="measure-unit w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500">
+                    <option value="inches">inches</option>
+                    <option value="cm">cm</option>
+                </select>
+            </td>
+            <td class="py-2 text-right">
+                <button type="button" onclick="this.closest('tr').remove();" class="text-gray-400 hover:text-rose-500 focus:outline-none p-1">
+                    <i class="fa-solid fa-trash text-[10px]"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    // ==========================================
+    // 3. SUBMIT NEW PROJECT (UPDATED WITH SIZING)
+    // ==========================================
     async function submitNewProject(proceedToCosting) {
-        // 1. Gather data from the form
         const formData = new FormData();
         
         // Basic Info
-        formData.append('project_name', document.querySelector('input[placeholder="e.g., LGU Polo Shirts"]').value);
-        formData.append('quantity', document.querySelector('input[type="number"][min="1"]').value);
-        formData.append('due_date', document.querySelector('input[type="date"]').value);
-        formData.append('agreed_price', document.querySelector('input[step="0.01"]').value);
-        
+        formData.append('project_name', document.getElementById('cp_project_name').value);
+        formData.append('quantity', document.getElementById('cp_total_quantity').value);
+        formData.append('due_date', document.getElementById('cp_due_date').value);
+        formData.append('agreed_price', 0.00); 
+
+        // Gather Sizing Data if Enabled
+        const isSizingEnabled = document.getElementById('enable-sizing-toggle').checked;
+        if (isSizingEnabled) {
+            const sizingType = document.querySelector('input[name="sizing_type"]:checked').value;
+            formData.append('sizing_type', sizingType);
+
+            let sizingData = [];
+            if (sizingType === 'standard') {
+                document.querySelectorAll('#standard-sizing-tbody tr').forEach(row => {
+                    sizingData.push({
+                        label: row.querySelector('.sizing-label').value,
+                        qty: row.querySelector('.sizing-qty').value
+                    });
+                });
+            } else {
+                document.querySelectorAll('#custom-sizing-tbody tr').forEach(row => {
+                    sizingData.push({
+                        part: row.querySelector('.measure-part').value,
+                        val: row.querySelector('.measure-val').value,
+                        unit: row.querySelector('.measure-unit').value
+                    });
+                });
+            }
+            formData.append('sizing_data', JSON.stringify(sizingData));
+        }
+
         // Workflow Info
         const workflowType = document.querySelector('input[name="workflow_type"]:checked').value;
         formData.append('workflow_type', workflowType);
@@ -401,18 +588,18 @@ include 'includes/header.php';
             formData.append('is_new_customer', isNewCustomer);
             
             if (isNewCustomer) {
-                formData.append('new_customer_name', document.querySelector('input[placeholder="Full Name / Organization"]').value);
-                formData.append('new_customer_contact', document.querySelector('input[placeholder="Contact Number"]').value);
-                formData.append('new_customer_address', document.querySelector('input[placeholder="Address (Optional)"]').value);
+                formData.append('new_customer_name', document.getElementById('cp_new_cust_name').value);
+                formData.append('new_customer_contact', document.getElementById('cp_new_cust_contact').value);
+                formData.append('new_customer_address', document.getElementById('cp_new_cust_address').value);
             } else {
-                formData.append('existing_customer_id', document.querySelector('#existing-customer-div select').value);
+                formData.append('existing_customer_id', document.getElementById('cp_existing_customer').value);
             }
         } else {
-            formData.append('target_product_id', document.querySelector('#section-internal select').value);
+            formData.append('target_product_id', document.getElementById('cp_target_product').value);
         }
 
         try {
-            // 2. Send the data to our PHP script using Fetch API
+            // Note the updated 'actions/' folder!
             const response = await fetch('actions/save_project.php', {
                 method: 'POST',
                 body: formData
@@ -421,14 +608,10 @@ include 'includes/header.php';
             const result = await response.json();
 
             if (result.status === 'success') {
-                // Close the create project modal
                 closeCreateProjectModal();
-                
                 if (proceedToCosting) {
-                    // Open the Costing Modal with the newly created project data!
                     openCostingModal(result.project_id, result.project_name);
                 } else {
-                    // Just reload the page to show the new project in the table
                     window.location.reload();
                 }
             } else {
@@ -440,11 +623,11 @@ include 'includes/header.php';
         }
     }
 
-
-    // --- COSTING MODAL LOGIC (Kept exactly as you designed it) ---
+    // ==========================================
+    // 4. COSTING MODAL LOGIC (Untouched, just reorganized)
+    // ==========================================
     const rawMaterials = <?php echo $materials_json; ?>;
 
-    // --- UPDATED COSTING LOGIC ---
     async function openCostingModal(projectId, projectName) {
         document.getElementById('modal-project-id').value = projectId;
         document.getElementById('modal-project-name').textContent = projectName;
@@ -455,22 +638,19 @@ include 'includes/header.php';
         document.getElementById('costing-modal').classList.remove('hidden');
         
         try {
-            // Fetch existing breakdown data!
             const response = await fetch(`actions/get_costing.php?project_id=${projectId}`);
             const result = await response.json();
             
-            tbody.innerHTML = ''; // Clear loading spinner
+            tbody.innerHTML = ''; 
             
             if (result.status === 'success' && result.data.length > 0) {
-                // If data exists, loop through and add pre-filled rows
                 result.data.forEach(item => {
                     addCostingRow(item.material_id, item.quantity_used, item.unit_cost);
                 });
-                deleteBtn.classList.remove('hidden'); // Show delete button
+                deleteBtn.classList.remove('hidden');
             } else {
-                // If no data, just add one empty row
                 addCostingRow();
-                deleteBtn.classList.add('hidden'); // Hide delete button
+                deleteBtn.classList.add('hidden');
             }
             calculateGrandTotal();
         } catch (error) {
@@ -479,10 +659,8 @@ include 'includes/header.php';
         }
     }
 
-    // Notice we added parameters here so we can pre-fill the data!
     function addCostingRow(prefillMatId = "", prefillQty = 1, prefillPrice = "0.00") {
         const tbody = document.getElementById('costing-tbody');
-        
         let optionsHtml = '<option value="" data-uom="--">Select Material...</option>';
         let selectedUom = '--';
 
@@ -522,18 +700,14 @@ include 'includes/header.php';
         tbody.appendChild(tr);
     }
 
-    // --- NEW: EDIT AGREED PRICE ---
     async function editAgreedPrice(projectId, currentPrice) {
-        // Native prompt is the cleanest, most mobile-friendly way to ask for a single number
         const newPriceStr = prompt("Enter the new Agreed Price (₱):", currentPrice);
-        
         if (newPriceStr !== null && newPriceStr.trim() !== "") {
             const newPrice = parseFloat(newPriceStr);
             if (isNaN(newPrice)) {
                 alert("Please enter a valid number.");
                 return;
             }
-
             try {
                 const response = await fetch('actions/update_price.php', {
                     method: 'POST',
@@ -541,9 +715,8 @@ include 'includes/header.php';
                     headers: { 'Content-Type': 'application/json' }
                 });
                 const result = await response.json();
-                
                 if(result.status === 'success') {
-                    window.location.reload(); // Reload to show new price & profit
+                    window.location.reload(); 
                 } else {
                     alert("Error updating price: " + result.message);
                 }
@@ -553,12 +726,9 @@ include 'includes/header.php';
         }
     }
 
-    // --- NEW: DELETE ENTIRE COSTING ---
     async function deleteCosting() {
         if (!confirm("Are you sure you want to delete this entire costing breakdown? This cannot be undone.")) return;
-        
         const projectId = document.getElementById('modal-project-id').value;
-        
         try {
             const response = await fetch('actions/delete_costing.php', {
                 method: 'POST',
@@ -566,7 +736,6 @@ include 'includes/header.php';
                 headers: { 'Content-Type': 'application/json' }
             });
             const result = await response.json();
-            
             if(result.status === 'success') {
                 window.location.reload();
             } else {
@@ -576,7 +745,6 @@ include 'includes/header.php';
             alert("Network error while deleting.");
         }
     }
-
 
     function closeCostingModal() {
         document.getElementById('costing-modal').classList.add('hidden');
@@ -613,7 +781,6 @@ include 'includes/header.php';
         document.getElementById('grand-total-display').textContent = '₱ ' + grandTotal.toFixed(2);
     }
 
-    // --- SUBMIT COSTING BREAKDOWN TO BACKEND (WITH DEBUGGING) ---
     async function saveCosting() {
         const projectId = document.getElementById('modal-project-id').value;
         const rows = document.querySelectorAll('#costing-tbody tr');
@@ -622,7 +789,6 @@ include 'includes/header.php';
         rows.forEach(row => {
             const selectElement = row.querySelector('select');
             const materialId = selectElement.value;
-            
             if (materialId !== "") {
                 const qty = row.querySelector('.qty-input').value;
                 const price = row.querySelector('.price-input').value;
@@ -653,19 +819,14 @@ include 'includes/header.php';
 
             const response = await fetch('actions/save_costing.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            // IMPORTANT: We grab the raw text FIRST before trying to parse it as JSON
             const rawText = await response.text();
 
             try {
-                // Now we try to convert it to JSON
                 const result = JSON.parse(rawText);
-
                 if (result.status === 'success') {
                     closeCostingModal();
                     window.location.reload(); 
@@ -675,9 +836,8 @@ include 'includes/header.php';
                     saveBtn.disabled = false;
                 }
             } catch (jsonError) {
-                // If parsing fails, it means PHP outputted HTML (a fatal error!)
                 console.error("Raw Server Response:", rawText);
-                alert("PHP Fatal Error! The server responded with HTML instead of JSON.\n\n" + rawText.substring(0, 300) + "\n\n(Check your browser console for the full error).");
+                alert("PHP Fatal Error! The server responded with HTML instead of JSON.\n\n" + rawText.substring(0, 300));
                 saveBtn.innerHTML = originalBtnHtml;
                 saveBtn.disabled = false;
             }
@@ -689,8 +849,7 @@ include 'includes/header.php';
             saveBtn.disabled = false;
         }
     }
-
-
 </script>
+
 
 <?php include 'includes/footer.php'; ?>
