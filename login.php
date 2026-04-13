@@ -1,7 +1,13 @@
 <?php
-session_start();
 require_once('config/database.php');
+
+// NEW: If they are already logged in, send them straight to the dashboard!
+if (isset($_SESSION['admin_id'])) {
+    header("Location: index.php");
+    exit();
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -112,19 +118,21 @@ require_once('config/database.php');
             // Stop the page from immediately refreshing!
             event.preventDefault(); 
         
-            // 2. Grab the inputs and the button
+            // 2. Grab the inputs, the button, AND the checkbox
             const usernameInput = document.getElementById('username').value;
             const passwordInput = document.getElementById('password').value;
+            const rememberInput = document.getElementById('remember').checked; // NEW: Grab the checkbox!
+            
             const loginBtn = document.getElementById('login-btn');
             const originalBtnText = loginBtn.innerHTML;
         
-            // 3. UI Update: Show the loading state so the user knows it's working
+            // 3. UI Update: Show the loading state
             loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
-            loginBtn.disabled = true; // Prevent double-clicking
+            loginBtn.disabled = true; 
             loginBtn.classList.add('opacity-75', 'cursor-not-allowed');
         
             try {
-                // 4. The ASYNC magic: Send the data to your PHP file in the background
+                // 4. Send the data to your PHP file in the background
                 const response = await fetch('actions/login.php', {
                     method: 'POST',
                     headers: {
@@ -132,31 +140,25 @@ require_once('config/database.php');
                     },
                     body: JSON.stringify({
                         username: usernameInput,
-                        password: passwordInput
+                        password: passwordInput,
+                        remember: rememberInput // NEW: Send the checkbox status to PHP!
                     })
                 });
         
-                // 5. Wait for PHP to answer
                 const data = await response.json();
         
-                // 6. Handle the PHP response
                 if (data.success) {
-                    // If PHP says the password is correct, send them to the dashboard!
                     window.location.href = 'index.php'; 
                 } else {
-                    // If wrong password, show an error and reset the button
                     alert(data.message || 'Invalid username or password.');
                     resetButton();
                 }
         
             } catch (error) {
-                // This will pop up the exact technical error message
                 alert('System Error: ' + error.message);
                 resetButton();
             }
-
         
-            // Helper function to put the button back to normal if login fails
             function resetButton() {
                 loginBtn.innerHTML = originalBtnText;
                 loginBtn.disabled = false;

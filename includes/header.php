@@ -1,13 +1,11 @@
 <?php
-session_start();
+// connects all page to the database
+require_once('config/database.php');
 
 if (empty($_SESSION['admin_id'])) {
     header('Location: ../login.php');
     exit();
 }
-
-// connects all page to the database
-require_once('config/database.php');
 
 $stmt = $conn->prepare("
     SELECT full_name, username, role
@@ -150,9 +148,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span class="font-bold text-sm tracking-wide">Staff Access</span>
             </a>
             
-            <a href="history.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'history.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
-                <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors <?php echo ($current_page == 'history.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
-                <span class="font-bold text-sm tracking-wide">History & Changes</span>
+            <a href="system_activity.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'system_activity.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors <?php echo ($current_page == 'system_activiyt.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">System Activity</span>
             </a>
             
             <a href="backup.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'backup.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
