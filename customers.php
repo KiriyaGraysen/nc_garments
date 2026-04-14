@@ -146,56 +146,60 @@ include 'includes/header.php';
 </main>
 
 <div id="customer-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCustomerModal()"></div>
-    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 dark:border-zinc-800">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCustomerModal()"></div>
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="cm_title">Add New Customer</h3>
-            <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
-        <div class="p-6">
-            <form id="customer-form" class="space-y-4">
+        <div class="p-6 overflow-y-auto flex-1">
+            <form id="customer-form" class="space-y-5">
                 <input type="hidden" id="cm_id">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Full Name / Organization *</label>
-                    <input type="text" id="cm_name" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Full Name / Organization *</label>
+                    <input type="text" id="cm_name" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Contact Number</label>
-                    <input type="text" id="cm_contact" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Contact Number</label>
+                    <input type="text" id="cm_contact" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Address</label>
-                    <input type="text" id="cm_address" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Address</label>
+                    <input type="text" id="cm_address" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                 </div>
             </form>
         </div>
         <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
-            <button onclick="closeCustomerModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-            <button onclick="saveCustomer()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md">Save Customer</button>
+            <button onclick="closeCustomerModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
+            <button onclick="saveCustomer()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 focus:outline-none">Save Customer</button>
         </div>
     </div>
 </div>
 
 <div id="details-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeDetailsModal()"></div>
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeDetailsModal()"></div>
     <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
             <div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="det_name">Customer Name</h3>
-                <p class="text-xs font-bold text-pink-600 uppercase tracking-widest mt-1" id="det_id">CUST-000</p>
+                <p class="text-xs font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest mt-1" id="det_id">CUST-000</p>
             </div>
-            <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
         <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-gray-50/30 dark:bg-zinc-950/30">
             
             <div class="lg:col-span-2 space-y-4">
-                <h4 class="text-xs font-extrabold text-gray-500 uppercase tracking-widest border-b pb-2">Active Projects & Billing</h4>
+                <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-800 pb-2">Active Projects & Billing</h4>
                 <div id="det_projects" class="space-y-3">
                     </div>
             </div>
 
-            <div class="space-y-4 border-l pl-6 dark:border-zinc-800">
-                <h4 class="text-xs font-extrabold text-gray-500 uppercase tracking-widest border-b pb-2">Recent Payments</h4>
+            <div class="space-y-4 border-l pl-6 border-gray-200 dark:border-zinc-800">
+                <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-800 pb-2">Recent Payments</h4>
                 <div id="det_payments" class="space-y-3">
                     </div>
             </div>
@@ -205,22 +209,24 @@ include 'includes/header.php';
 </div>
 
 <div id="payment-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closePaymentModal()"></div>
-    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-gray-100 dark:border-zinc-800">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closePaymentModal()"></div>
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Record Payment</h3>
-            <button onclick="closePaymentModal()" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closePaymentModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
         <div class="p-6">
             <form id="payment-form" class="space-y-5">
                 <input type="hidden" id="pay_project_id">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Amount Paid (₱) *</label>
-                    <input type="number" id="pay_amount" step="0.01" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-lg font-bold">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Amount Paid (₱) *</label>
+                    <input type="number" id="pay_amount" step="0.01" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-lg font-bold">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Payment Method *</label>
-                    <select id="pay_method" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Payment Method *</label>
+                    <select id="pay_method" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                         <option value="Cash">Cash</option>
                         <option value="GCash">GCash</option>
                         <option value="Bank Transfer">Bank Transfer</option>
@@ -228,14 +234,14 @@ include 'includes/header.php';
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Reference No. (Optional)</label>
-                    <input type="text" id="pay_ref" placeholder="e.g., GCash Ref No." class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 text-sm">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Reference No. (Optional)</label>
+                    <input type="text" id="pay_ref" placeholder="e.g., GCash Ref No." class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                 </div>
             </form>
         </div>
-        <div class="px-6 py-4 border-t bg-gray-50/50 flex justify-end gap-3">
-            <button onclick="closePaymentModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-            <button onclick="savePayment()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md">Confirm Payment</button>
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
+            <button onclick="closePaymentModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
+            <button onclick="savePayment()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 focus:outline-none">Confirm Payment</button>
         </div>
     </div>
 </div>
@@ -307,9 +313,9 @@ include 'includes/header.php';
                 document.getElementById('det_name').textContent = c.full_name;
                 document.getElementById('det_id').textContent = `CUST-${String(c.customer_id).padStart(4, '0')}`;
 
-                // Render Projects
+                                // Render Projects
                 let projHtml = '';
-                if(data.projects.length === 0) projHtml = '<p class="text-sm text-gray-500 italic">No active projects found.</p>';
+                if(data.projects.length === 0) projHtml = '<p class="text-sm text-gray-500 dark:text-zinc-500 italic">No active projects found.</p>';
                 
                 data.projects.forEach(p => {
                     const price = parseFloat(p.agreed_price);
@@ -317,27 +323,27 @@ include 'includes/header.php';
                     const bal = price - paid;
                     
                     projHtml += `
-                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm flex justify-between items-center">
+                    <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm flex justify-between items-center transition-colors">
                         <div>
                             <p class="font-bold text-gray-900 dark:text-white">#PRJ-${p.project_id} - ${p.project_name}</p>
-                            <p class="text-xs text-gray-500 mt-1">Price: ₱${formatCurrency(price)} | Paid: ₱${formatCurrency(paid)}</p>
+                            <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Price: ₱${formatCurrency(price)} | Paid: ₱${formatCurrency(paid)}</p>
                             <p class="text-sm font-extrabold ${bal > 0 ? 'text-rose-500' : 'text-emerald-500'} mt-1">Balance: ₱${formatCurrency(bal)}</p>
                         </div>
-                        ${bal > 0 ? `<button onclick="openPaymentModal(${p.project_id}, ${bal})" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"><i class="fa-solid fa-plus mr-1"></i> Pay</button>` : `<span class="text-emerald-500 text-xl"><i class="fa-solid fa-circle-check"></i></span>`}
+                        ${bal > 0 ? `<button onclick="openPaymentModal(${p.project_id}, ${bal})" class="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none"><i class="fa-solid fa-plus mr-1"></i> Pay</button>` : `<span class="text-emerald-500 text-xl"><i class="fa-solid fa-circle-check"></i></span>`}
                     </div>`;
                 });
                 document.getElementById('det_projects').innerHTML = projHtml;
 
                 // Render Payments
                 let payHtml = '';
-                if(data.payments.length === 0) payHtml = '<p class="text-sm text-gray-500 italic">No payments recorded.</p>';
+                if(data.payments.length === 0) payHtml = '<p class="text-sm text-gray-500 dark:text-zinc-500 italic">No payments recorded.</p>';
                 
                 data.payments.forEach(pay => {
                     payHtml += `
                     <div class="border-b border-gray-100 dark:border-zinc-800 pb-3 mb-3">
-                        <p class="font-bold text-emerald-600">+ ₱${formatCurrency(pay.amount_paid)} <span class="text-xs text-gray-400 font-normal">(${pay.payment_method})</span></p>
-                        <p class="text-xs text-gray-600 dark:text-zinc-400 mt-0.5">For: ${pay.project_name}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">${new Date(pay.payment_date).toLocaleDateString()}</p>
+                        <p class="font-bold text-emerald-600 dark:text-emerald-500">+ ₱${formatCurrency(pay.amount_paid)} <span class="text-xs text-gray-400 dark:text-zinc-500 font-normal">(${pay.payment_method})</span></p>
+                        <p class="text-xs text-gray-600 dark:text-zinc-300 mt-0.5">For: ${pay.project_name}</p>
+                        <p class="text-[10px] text-gray-400 dark:text-zinc-500 mt-0.5">${new Date(pay.payment_date).toLocaleDateString()}</p>
                     </div>`;
                 });
                 document.getElementById('det_payments').innerHTML = payHtml;
