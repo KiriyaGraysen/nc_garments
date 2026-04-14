@@ -201,7 +201,7 @@ include 'includes/header.php';
             </div>
             
             <div class="p-6 overflow-y-auto flex-1">
-                <form id="create-project-form" class="space-y-6">
+                <form id="create-project-form" class="space-y-5">
                     
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="col-span-2">
@@ -213,8 +213,6 @@ include 'includes/header.php';
                             <input type="date" id="cp_due_date" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
                         </div>
                     </div>
-
-                    <hr class="border-gray-100 dark:border-zinc-800">
 
                     <div class="bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 space-y-4">
                         <div class="flex justify-between items-center">
@@ -285,8 +283,6 @@ include 'includes/header.php';
 
                         </div>
                     </div>
-
-                    <hr class="border-gray-100 dark:border-zinc-800">
 
                     <div>
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-3 uppercase tracking-wide">Production Workflow</label>

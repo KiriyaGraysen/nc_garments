@@ -212,7 +212,7 @@ include 'includes/header.php';
             <button onclick="closePaymentModal()" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="p-6">
-            <form id="payment-form" class="space-y-4">
+            <form id="payment-form" class="space-y-5">
                 <input type="hidden" id="pay_project_id">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase">Amount Paid (₱) *</label>
