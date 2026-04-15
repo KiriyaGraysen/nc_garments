@@ -343,10 +343,11 @@ include 'includes/header.php';
                                 
                                 <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
                                     <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Quantity & Sizing</h4>
-                                    <label class="flex items-center gap-2 cursor-pointer">
+                                    <label class="flex items-center gap-2 cursor-pointer" id="create_sizing_toggle_label">
                                         <input type="checkbox" id="enable-sizing-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleSizingModule()">
-                                        <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Enable Sizing</span>
+                                        <span class="text-xs font-bold text-pink-600 dark:text-pink-500">Specify Sizes / Measurements</span>
                                     </label>
+
                                 </div>
 
                                 <div class="flex-none mb-4 relative">
@@ -517,7 +518,6 @@ include 'includes/header.php';
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
                     
                     <div class="lg:col-span-7 flex flex-col gap-5">
-                        
                         <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
                             <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Client / Target</h4>
                             <div id="vd_client_info" class="text-sm text-gray-800 dark:text-zinc-200 font-medium"></div>
@@ -545,51 +545,60 @@ include 'includes/header.php';
 
                     <div class="lg:col-span-5 relative min-h-[400px] lg:min-h-0">
                         <div class="lg:absolute inset-0 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col h-full">
+                            
                             <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
                                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Sizing & Measurements</h4>
-                            </div>
-                            
-                            <div class="flex gap-4 mb-4 flex-none">
-                                <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
-                                    <input type="radio" name="edit_sizing_type" value="standard" onchange="switchEditSizingType()" class="text-pink-600 focus:ring-pink-500"> Standard
+                                <label class="flex items-center gap-2 cursor-pointer" id="edit_sizing_toggle_label">
+                                    <input type="checkbox" id="edit_enable_sizing_toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleEditSizingModule()">
+                                    <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Enable Sizing</span>
                                 </label>
-                                <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
-                                    <input type="radio" name="edit_sizing_type" value="custom" onchange="switchEditSizingType()" class="text-pink-600 focus:ring-pink-500"> Custom
-                                </label>
-                            </div>
-                            
-                            <div class="flex-1 overflow-y-auto pr-1 min-h-0">
-                                <div id="edit_standard_wrapper" class="space-y-2">
-                                    <table class="w-full text-left relative">
-                                        <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
-                                            <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
-                                                <th class="pb-2 pt-1 w-3/5">Size Label</th>
-                                                <th class="pb-2 pt-1 w-1/4">Qty</th>
-                                                <th class="pb-2 pt-1 w-8"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="edit_standard_tbody"></tbody>
-                                    </table>
-                                    <button type="button" onclick="addEditStandardRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
-                                        <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
-                                    </button>
-                                </div>
 
-                                <div id="edit_custom_wrapper" class="hidden space-y-2">
-                                    <table class="w-full text-left relative">
-                                        <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
-                                            <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
-                                                <th class="pb-2 pt-1 w-2/5">Body Part</th>
-                                                <th class="pb-2 pt-1 w-1/4">Value</th>
-                                                <th class="pb-2 pt-1 w-1/4">Unit</th>
-                                                <th class="pb-2 pt-1 w-8"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="edit_custom_tbody"></tbody>
-                                    </table>
-                                    <button type="button" onclick="addEditCustomRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
-                                        <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Measurement
-                                    </button>
+
+                            </div>
+                            
+                            <div id="edit_sizing_area" class="hidden flex-1 overflow-hidden flex flex-col min-h-0">
+                                <div class="flex gap-4 mb-4 flex-none">
+                                    <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                        <input type="radio" name="edit_sizing_type" value="standard" onchange="switchEditSizingType()" class="text-pink-600 focus:ring-pink-500"> Standard
+                                    </label>
+                                    <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                        <input type="radio" name="edit_sizing_type" value="custom" onchange="switchEditSizingType()" class="text-pink-600 focus:ring-pink-500"> Custom
+                                    </label>
+                                </div>
+                                
+                                <div class="flex-1 overflow-y-auto pr-1 min-h-0">
+                                    <div id="edit_standard_wrapper" class="space-y-2">
+                                        <table class="w-full text-left relative">
+                                            <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
+                                                <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                                    <th class="pb-2 pt-1 w-3/5">Size Label</th>
+                                                    <th class="pb-2 pt-1 w-1/4">Qty</th>
+                                                    <th class="pb-2 pt-1 w-8"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="edit_standard_tbody"></tbody>
+                                        </table>
+                                        <button type="button" onclick="addEditStandardRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                            <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
+                                        </button>
+                                    </div>
+
+                                    <div id="edit_custom_wrapper" class="hidden space-y-2">
+                                        <table class="w-full text-left relative">
+                                            <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
+                                                <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                                    <th class="pb-2 pt-1 w-2/5">Body Part</th>
+                                                    <th class="pb-2 pt-1 w-1/4">Value</th>
+                                                    <th class="pb-2 pt-1 w-1/4">Unit</th>
+                                                    <th class="pb-2 pt-1 w-8"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="edit_custom_tbody"></tbody>
+                                        </table>
+                                        <button type="button" onclick="addEditCustomRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                            <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Measurement
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -605,6 +614,7 @@ include 'includes/header.php';
         </div>
     </div>
 
+
 </main>
 
 <script>
@@ -616,14 +626,28 @@ include 'includes/header.php';
 
     function toggleWorkflow() {
         const isCustomer = document.querySelector('input[name="workflow_type"][value="customer"]').checked;
+        const sizingToggleLabel = document.getElementById('create_sizing_toggle_label');
+        const sizingCheckbox = document.getElementById('enable-sizing-toggle');
+
         if (isCustomer) {
+            // Make-to-Order: Show Customer section, show Sizing Checkbox
             document.getElementById('section-customer').classList.remove('hidden');
             document.getElementById('section-internal').classList.add('hidden');
+            sizingToggleLabel.classList.remove('hidden');
         } else {
+            // Make-to-Stock: Show Internal section, hide and UNCHECK Sizing
             document.getElementById('section-customer').classList.add('hidden');
             document.getElementById('section-internal').classList.remove('hidden');
+            
+            // Hide the option to add sizes
+            sizingToggleLabel.classList.add('hidden');
+            
+            // Force the checkbox to be false and trigger the UI reset
+            sizingCheckbox.checked = false;
+            toggleSizingModule(); 
         }
     }
+
 
     function toggleNewCustomer() {
         const isNew = document.getElementById('new-customer-toggle').checked;
@@ -649,7 +673,7 @@ include 'includes/header.php';
             sizingArea.classList.add('hidden');
             const qtyInput = document.getElementById('cp_total_quantity');
             qtyInput.readOnly = false;
-            qtyInput.classList.remove('bg-gray-100', 'text-gray-500');
+            qtyInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-500');
             document.getElementById('qty-warning').classList.add('hidden');
         }
     }
@@ -665,14 +689,14 @@ include 'includes/header.php';
             standardWrapper.classList.remove('hidden');
             customWrapper.classList.add('hidden');
             qtyInput.readOnly = true;
-            qtyInput.classList.add('bg-gray-100', 'text-gray-500');
+            qtyInput.classList.add('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-500');
             qtyWarning.classList.remove('hidden');
             calculateTotalStandardQuantity();
         } else {
             standardWrapper.classList.add('hidden');
             customWrapper.classList.remove('hidden');
             qtyInput.readOnly = false;
-            qtyInput.classList.remove('bg-gray-100', 'text-gray-500');
+            qtyInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-500');
             qtyWarning.classList.add('hidden');
         }
     }
@@ -949,12 +973,34 @@ include 'includes/header.php';
         } catch (e) { alert("Network error."); }
     }
 
+    // --- NEW: Toggle function for the Edit Modal ---
+    function toggleEditSizingModule() {
+        const isChecked = document.getElementById('edit_enable_sizing_toggle').checked;
+        const sizingArea = document.getElementById('edit_sizing_area');
+        const qtyInput = document.getElementById('edit_quantity');
+        const qtyWarning = document.getElementById('edit_qty_warning');
+
+        if (isChecked) {
+            sizingArea.classList.remove('hidden');
+            if(!document.querySelector('input[name="edit_sizing_type"]:checked')) {
+                document.querySelector('input[name="edit_sizing_type"][value="standard"]').checked = true;
+            }
+            switchEditSizingType();
+        } else {
+            sizingArea.classList.add('hidden');
+            qtyInput.readOnly = false;
+            qtyInput.classList.remove('bg-gray-200', 'dark:bg-zinc-800', 'text-gray-500');
+            if(qtyWarning) qtyWarning.classList.add('hidden');
+        }
+    }
+
     function closeViewDetailsModal() { document.getElementById('view-details-modal').classList.add('hidden'); }
 
     async function viewProjectDetails(projectId) {
         document.getElementById('view-details-modal').classList.remove('hidden');
         document.getElementById('vd_project_id').textContent = "#PRJ-2026-" + String(projectId).padStart(3, '0');
         document.getElementById('edit_project_id').value = projectId;
+        
         document.getElementById('edit_standard_tbody').innerHTML = '';
         document.getElementById('edit_custom_tbody').innerHTML = '';
         
@@ -968,20 +1014,48 @@ include 'includes/header.php';
                 document.getElementById('edit_quantity').value = p.quantity;
                 document.getElementById('edit_due_date').value = p.due_date || '';
                 
+                const sizingToggleLabel = document.getElementById('edit_sizing_toggle_label');
                 let clientHtml = '';
-                if (p.customer_id) clientHtml = `<p class="font-bold text-pink-600"><i class="fa-solid fa-user mr-2"></i>${p.customer_name}</p><p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-phone mr-2"></i>${p.contact_number || 'No contact'}</p>`;
-                else clientHtml = `<p class="font-bold text-amber-600"><i class="fa-solid fa-boxes-stacked mr-2"></i>Internal Restock</p><p class="text-xs text-gray-500 mt-1">Target: ${p.internal_product} (${p.internal_size})</p>`;
+                
+                if (p.customer_id) {
+                    // Make-to-Order: Show customer info and ENABLE the sizing checkbox visibility
+                    clientHtml = `<p class="font-bold text-pink-600"><i class="fa-solid fa-user mr-2"></i>${p.customer_name}</p>
+                                  <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-phone mr-2"></i>${p.contact_number || 'No contact'}</p>`;
+                    sizingToggleLabel.classList.remove('hidden');
+                } else {
+                    // Make-to-Stock: Show internal info and HIDE the sizing checkbox
+                    clientHtml = `<p class="font-bold text-amber-600"><i class="fa-solid fa-boxes-stacked mr-2"></i>Internal Restock</p>
+                                  <p class="text-xs text-gray-500 mt-1">Target: ${p.internal_product} (${p.internal_size})</p>`;
+                    sizingToggleLabel.classList.add('hidden');
+                }
                 document.getElementById('vd_client_info').innerHTML = clientHtml;
                 
-                if (result.measurements && result.measurements.length > 0) {
-                    document.querySelector('input[name="edit_sizing_type"][value="custom"]').checked = true;
-                    switchEditSizingType();
-                    result.measurements.forEach(m => addEditCustomRow(m.body_part, m.measurement_value, m.unit));
+                // Smart Checkbox Logic based on workflow type
+                if (p.customer_id) {
+                    const hasSizing = (result.measurements && result.measurements.length > 0) || (result.sizes && result.sizes.length > 0);
+                    
+                    if (hasSizing) {
+                        document.getElementById('edit_enable_sizing_toggle').checked = true;
+                        toggleEditSizingModule();
+
+                        if (result.measurements && result.measurements.length > 0) {
+                            document.querySelector('input[name="edit_sizing_type"][value="custom"]').checked = true;
+                            switchEditSizingType();
+                            result.measurements.forEach(m => addEditCustomRow(m.body_part, m.measurement_value, m.unit));
+                        } else {
+                            document.querySelector('input[name="edit_sizing_type"][value="standard"]').checked = true;
+                            switchEditSizingType();
+                            result.sizes.forEach(s => addEditStandardRow(s.size_label, s.quantity));
+                        }
+                    } else {
+                        document.getElementById('edit_enable_sizing_toggle').checked = false;
+                        toggleEditSizingModule();
+                        addEditStandardRow('', p.quantity);
+                    }
                 } else {
-                    document.querySelector('input[name="edit_sizing_type"][value="standard"]').checked = true;
-                    switchEditSizingType();
-                    if(result.sizes && result.sizes.length > 0) result.sizes.forEach(s => addEditStandardRow(s.size_label, s.quantity));
-                    else addEditStandardRow('', p.quantity);
+                    // If it is Internal Restock, force the checkbox off and trigger the UI reset
+                    document.getElementById('edit_enable_sizing_toggle').checked = false;
+                    toggleEditSizingModule();
                 }
             }
         } catch (e) { alert("Error loading details."); }
@@ -990,17 +1064,21 @@ include 'includes/header.php';
     function switchEditSizingType() {
         const type = document.querySelector('input[name="edit_sizing_type"]:checked').value;
         const qtyInput = document.getElementById('edit_quantity');
+        const qtyWarning = document.getElementById('edit_qty_warning');
+        
         if (type === 'standard') {
             document.getElementById('edit_standard_wrapper').classList.remove('hidden');
             document.getElementById('edit_custom_wrapper').classList.add('hidden');
             qtyInput.readOnly = true;
-            qtyInput.classList.add('bg-gray-200', 'text-gray-500');
+            qtyInput.classList.add('bg-gray-200', 'dark:bg-zinc-800', 'text-gray-500');
+            if(qtyWarning) qtyWarning.classList.remove('hidden');
             calculateEditTotalQty();
         } else {
             document.getElementById('edit_standard_wrapper').classList.add('hidden');
             document.getElementById('edit_custom_wrapper').classList.remove('hidden');
             qtyInput.readOnly = false;
-            qtyInput.classList.remove('bg-gray-200', 'text-gray-500');
+            qtyInput.classList.remove('bg-gray-200', 'dark:bg-zinc-800', 'text-gray-500');
+            if(qtyWarning) qtyWarning.classList.add('hidden');
         }
     }
 
@@ -1020,6 +1098,7 @@ include 'includes/header.php';
     }
 
     function calculateEditTotalQty() {
+        if (!document.getElementById('edit_enable_sizing_toggle').checked) return;
         if (document.querySelector('input[name="edit_sizing_type"]:checked').value !== 'standard') return;
         let total = 0;
         document.querySelectorAll('#edit_standard_tbody .edit-sz-qty').forEach(input => total += parseInt(input.value) || 0);
@@ -1027,20 +1106,32 @@ include 'includes/header.php';
     }
 
     function overrideEditQuantity() {
+        if (!document.getElementById('edit_enable_sizing_toggle').checked) return;
         if (document.querySelector('input[name="edit_sizing_type"]:checked').value === 'standard') calculateEditTotalQty();
     }
 
     async function saveProjectUpdates() {
-        const type = document.querySelector('input[name="edit_sizing_type"]:checked').value;
+        const isSizingEnabled = document.getElementById('edit_enable_sizing_toggle').checked;
+        let type = 'none'; 
         let sizingData = [];
         
-        if (type === 'standard') {
-            document.querySelectorAll('#edit_standard_tbody tr').forEach(row => sizingData.push({ label: row.querySelector('.edit-sz-label').value, qty: row.querySelector('.edit-sz-qty').value }));
-        } else {
-            document.querySelectorAll('#edit_custom_tbody tr').forEach(row => sizingData.push({ part: row.querySelector('.edit-ms-part').value, val: row.querySelector('.edit-ms-val').value, unit: row.querySelector('.edit-ms-unit').value }));
+        if (isSizingEnabled) {
+            type = document.querySelector('input[name="edit_sizing_type"]:checked').value;
+            if (type === 'standard') {
+                document.querySelectorAll('#edit_standard_tbody tr').forEach(row => sizingData.push({ label: row.querySelector('.edit-sz-label').value, qty: row.querySelector('.edit-sz-qty').value }));
+            } else {
+                document.querySelectorAll('#edit_custom_tbody tr').forEach(row => sizingData.push({ part: row.querySelector('.edit-ms-part').value, val: row.querySelector('.edit-ms-val').value, unit: row.querySelector('.edit-ms-unit').value }));
+            }
         }
 
-        const payload = { project_id: document.getElementById('edit_project_id').value, project_name: document.getElementById('edit_project_name').value, due_date: document.getElementById('edit_due_date').value, quantity: document.getElementById('edit_quantity').value, sizing_type: type, sizing_data: JSON.stringify(sizingData) };
+        const payload = { 
+            project_id: document.getElementById('edit_project_id').value, 
+            project_name: document.getElementById('edit_project_name').value, 
+            due_date: document.getElementById('edit_due_date').value, 
+            quantity: document.getElementById('edit_quantity').value, 
+            sizing_type: type, 
+            sizing_data: JSON.stringify(sizingData) 
+        };
 
         const btn = document.getElementById('btn-update-project');
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';

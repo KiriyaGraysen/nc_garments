@@ -18,19 +18,20 @@ if ($data && isset($data['project_id'])) {
         $sizingType = $data['sizing_type'];
         $sizingData = json_decode($data['sizing_data'], true);
         
-        if ($sizingType === 'standard') {
-            // Wipe measurements in case they switched from Custom to Standard
+        if ($sizingType === 'none') {
+            // Checkbox was UNCHECKED! Wipe all sizing data.
+            $conn->query("DELETE FROM project_sizing WHERE project_id = $id");
             $conn->query("DELETE FROM project_measurement WHERE project_id = $id");
             
-            // Fetch existing standard sizes to compare
+        } elseif ($sizingType === 'standard') {
+            $conn->query("DELETE FROM project_measurement WHERE project_id = $id"); // Wipe custom
+            
             $existing = [];
             $get_existing = $conn->prepare("SELECT size_label, quantity FROM project_sizing WHERE project_id = ?");
             $get_existing->bind_param("i", $id);
             $get_existing->execute();
             $res = $get_existing->get_result();
-            while($row = $res->fetch_assoc()) {
-                $existing[$row['size_label']] = (int)$row['quantity'];
-            }
+            while($row = $res->fetch_assoc()) $existing[$row['size_label']] = (int)$row['quantity'];
 
             $new_labels = [];
             $update_stmt = $conn->prepare("UPDATE project_sizing SET quantity = ? WHERE project_id = ? AND size_label = ?");
@@ -38,25 +39,22 @@ if ($data && isset($data['project_id'])) {
 
             foreach ($sizingData as $size) {
                 $label = trim($size['label']);
-                if(empty($label)) continue; // Skip empty rows
+                if(empty($label)) continue; 
                 
                 $sizeQty = (int)$size['qty'];
                 $new_labels[] = $label;
 
                 if (array_key_exists($label, $existing)) {
-                    // It exists! Check if the quantity actually changed before updating
                     if ($existing[$label] !== $sizeQty) {
                         $update_stmt->bind_param("iis", $sizeQty, $id, $label);
                         $update_stmt->execute();
                     }
                 } else {
-                    // It's a brand new size! Insert it.
                     $insert_stmt->bind_param("isi", $id, $label, $sizeQty);
                     $insert_stmt->execute();
                 }
             }
 
-            // Find which sizes were removed and delete only those
             $to_delete = array_diff(array_keys($existing), $new_labels);
             if (!empty($to_delete)) {
                 $del_stmt = $conn->prepare("DELETE FROM project_sizing WHERE project_id = ? AND size_label = ?");
@@ -67,18 +65,14 @@ if ($data && isset($data['project_id'])) {
             }
 
         } elseif ($sizingType === 'custom') {
-            // Wipe standard sizes in case they switched from Standard to Custom
-            $conn->query("DELETE FROM project_sizing WHERE project_id = $id");
+            $conn->query("DELETE FROM project_sizing WHERE project_id = $id"); // Wipe standard
             
-            // Fetch existing custom measurements to compare
             $existing = [];
             $get_existing = $conn->prepare("SELECT body_part, measurement_value, unit FROM project_measurement WHERE project_id = ?");
             $get_existing->bind_param("i", $id);
             $get_existing->execute();
             $res = $get_existing->get_result();
-            while($row = $res->fetch_assoc()) {
-                $existing[$row['body_part']] = ['val' => (float)$row['measurement_value'], 'unit' => $row['unit']];
-            }
+            while($row = $res->fetch_assoc()) $existing[$row['body_part']] = ['val' => (float)$row['measurement_value'], 'unit' => $row['unit']];
 
             $new_parts = [];
             $update_stmt = $conn->prepare("UPDATE project_measurement SET measurement_value = ?, unit = ? WHERE project_id = ? AND body_part = ?");
@@ -86,26 +80,23 @@ if ($data && isset($data['project_id'])) {
 
             foreach ($sizingData as $measure) {
                 $part = trim($measure['part']);
-                if(empty($part)) continue; // Skip empty rows
+                if(empty($part)) continue; 
                 
                 $val = (float)$measure['val'];
                 $unit = $measure['unit'];
                 $new_parts[] = $part;
 
                 if (array_key_exists($part, $existing)) {
-                    // It exists! Check if value or unit changed
                     if ($existing[$part]['val'] !== $val || $existing[$part]['unit'] !== $unit) {
                         $update_stmt->bind_param("dsis", $val, $unit, $id, $part);
                         $update_stmt->execute();
                     }
                 } else {
-                    // It's a brand new measurement part! Insert it.
                     $insert_stmt->bind_param("isds", $id, $part, $val, $unit);
                     $insert_stmt->execute();
                 }
             }
 
-            // Find which parts were removed and delete only those
             $to_delete = array_diff(array_keys($existing), $new_parts);
             if (!empty($to_delete)) {
                 $del_stmt = $conn->prepare("DELETE FROM project_measurement WHERE project_id = ? AND body_part = ?");
