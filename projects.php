@@ -141,6 +141,10 @@ include 'includes/header.php';
                         
                         $agreed_price = (float)$project['agreed_price'];
                         $material_cost = (float)$project['total_material_cost'];
+                        
+                        // ADD THIS LINE:
+                        $is_internal_js = empty($project['full_name']) ? 'true' : 'false';
+
                         $est_profit = $agreed_price - $material_cost;
                         $profit_color = ($est_profit > 0) ? 'text-emerald-500' : (($agreed_price == 0 && $material_cost > 0) ? 'text-amber-500' : 'text-gray-400');
                         
@@ -217,7 +221,7 @@ include 'includes/header.php';
                                             <button onclick="event.stopPropagation(); viewProjectDetails(' . $project['project_id'] . ')" class="text-gray-400 hover:text-blue-500 transition-colors focus:outline-none p-2 mr-1" title="View/Edit Details">
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </button>
-                                            <button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold shadow-sm focus:outline-none">
+                                            <button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ', ' . $is_internal_js . ')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold shadow-sm focus:outline-none">
                                                 <i class="fa-solid fa-file-invoice-dollar mr-1"></i> Costing
                                             </button>';
 
@@ -458,7 +462,7 @@ include 'includes/header.php';
                     </div>
                     
                     <div class="flex flex-col relative">
-                        <span class="text-[10px] font-extrabold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Agreed Price (Charge)</span>
+                        <span id="costing-price-label" class="text-[10px] font-extrabold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Agreed Price (Charge)</span>
                         <div class="relative mt-0.5">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 dark:text-white font-bold text-sm">₱</span>
                             <input type="number" id="modal-agreed-price" step="0.01" value="0.00" class="w-32 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white text-lg font-extrabold rounded-lg pl-7 pr-3 py-1 outline-none focus:border-pink-500 shadow-sm" oninput="calculateProfitUI()">
@@ -618,6 +622,9 @@ include 'includes/header.php';
 </main>
 
 <script>
+    // Tracks if we are in the middle of creating a brand new project
+    let isNewProjectFlow = false; 
+
     // ==========================================
     // 1. CREATE PROJECT WIZARD LOGIC
     // ==========================================
@@ -630,24 +637,17 @@ include 'includes/header.php';
         const sizingCheckbox = document.getElementById('enable-sizing-toggle');
 
         if (isCustomer) {
-            // Make-to-Order: Show Customer section, show Sizing Checkbox
             document.getElementById('section-customer').classList.remove('hidden');
             document.getElementById('section-internal').classList.add('hidden');
-            sizingToggleLabel.classList.remove('hidden');
+            if(sizingToggleLabel) sizingToggleLabel.classList.remove('hidden');
         } else {
-            // Make-to-Stock: Show Internal section, hide and UNCHECK Sizing
             document.getElementById('section-customer').classList.add('hidden');
             document.getElementById('section-internal').classList.remove('hidden');
-            
-            // Hide the option to add sizes
-            sizingToggleLabel.classList.add('hidden');
-            
-            // Force the checkbox to be false and trigger the UI reset
-            sizingCheckbox.checked = false;
+            if(sizingToggleLabel) sizingToggleLabel.classList.add('hidden');
+            if(sizingCheckbox) sizingCheckbox.checked = false;
             toggleSizingModule(); 
         }
     }
-
 
     function toggleNewCustomer() {
         const isNew = document.getElementById('new-customer-toggle').checked;
@@ -777,13 +777,34 @@ include 'includes/header.php';
 
         try {
             const response = await fetch('actions/save_project.php', { method: 'POST', body: formData });
-            const result = await response.json();
-            if (result.status === 'success') {
-                closeCreateProjectModal();
-                if (proceedToCosting) openCostingModal(result.project_id, result.project_name);
-                else window.location.reload();
-            } else alert('Error: ' + result.message);
-        } catch (error) { alert('Network Error'); }
+            const rawText = await response.text(); 
+            
+            try {
+                const result = JSON.parse(rawText);
+                if (result.status === 'success') {
+                    closeCreateProjectModal();
+                    if (proceedToCosting) {
+                        const isInternal = (workflowType === 'internal');
+                        const calculatedPrice = result.agreed_price ? result.agreed_price : 0;
+                        
+                        // Tell the system we are in the "New Project" flow
+                        isNewProjectFlow = true; 
+                        
+                        openCostingModal(result.project_id, result.project_name, calculatedPrice, isInternal);
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    alert('Database Logic Error: ' + result.message);
+                }
+            } catch (jsonError) {
+                console.error("Raw Server Response:", rawText);
+                alert("PHP Error in save_project.php:\n\n" + rawText.substring(0, 500));
+            }
+            
+        } catch (error) { 
+            alert('True Network Fetch Error: ' + error.message); 
+        }
     }
 
     // ==========================================
@@ -792,11 +813,37 @@ include 'includes/header.php';
     function formatCurrency(number) { return parseFloat(number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     const rawMaterials = <?php echo $materials_json; ?>;
 
-    async function openCostingModal(projectId, projectName, currentAgreedPrice = 0) {
+    async function openCostingModal(projectId, projectName, currentAgreedPrice = 0, isInternal = false) {
         document.getElementById('modal-project-id').value = projectId;
         document.getElementById('modal-project-name').textContent = projectName;
+        
+        const priceLabel = document.getElementById('costing-price-label');
         const priceInput = document.getElementById('modal-agreed-price');
+
+        if (isInternal) {
+            if(priceLabel) {
+                priceLabel.textContent = 'Expected Retail Value';
+                priceLabel.className = 'text-[10px] font-extrabold text-amber-500 uppercase tracking-widest';
+            }
+            if(priceInput) {
+                priceInput.readOnly = true;
+                priceInput.title = "Calculated automatically from product retail price. Cannot be edited here.";
+                priceInput.classList.add('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-500', 'cursor-not-allowed');
+            }
+        } else {
+            if(priceLabel) {
+                priceLabel.textContent = 'Agreed Price (Charge)';
+                priceLabel.className = 'text-[10px] font-extrabold text-pink-600 dark:text-pink-500 uppercase tracking-widest';
+            }
+            if(priceInput) {
+                priceInput.readOnly = false;
+                priceInput.title = "";
+                priceInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800', 'text-gray-500', 'cursor-not-allowed');
+            }
+        }
+
         if(priceInput) priceInput.value = parseFloat(currentAgreedPrice).toFixed(2);
+        
         const tbody = document.getElementById('costing-tbody');
         const deleteBtn = document.getElementById('btn-delete-costing');
         
@@ -842,7 +889,14 @@ include 'includes/header.php';
         tbody.appendChild(tr);
     }
 
-    function closeCostingModal() { document.getElementById('costing-modal').classList.add('hidden'); }
+    function closeCostingModal() { 
+        document.getElementById('costing-modal').classList.add('hidden'); 
+        
+        // If we just created a new project and hit 'X' on costing, reload the table!
+        if (isNewProjectFlow) {
+            window.location.reload();
+        }
+    }
 
     function updateRowData(selectElement) {
         const opt = selectElement.options[selectElement.selectedIndex];
@@ -885,7 +939,8 @@ include 'includes/header.php';
 
     async function saveCosting() {
         const projectId = document.getElementById('modal-project-id').value;
-        const agreedPrice = document.getElementById('modal-agreed-price') ? document.getElementById('modal-agreed-price').value : 0;
+        const agreedPriceInput = document.getElementById('modal-agreed-price');
+        const agreedPrice = agreedPriceInput && !agreedPriceInput.readOnly ? agreedPriceInput.value : 0;
         let materialsData = [];
         document.querySelectorAll('#costing-tbody tr').forEach(row => {
             const materialId = row.querySelector('select').value;
@@ -973,7 +1028,6 @@ include 'includes/header.php';
         } catch (e) { alert("Network error."); }
     }
 
-    // --- NEW: Toggle function for the Edit Modal ---
     function toggleEditSizingModule() {
         const isChecked = document.getElementById('edit_enable_sizing_toggle').checked;
         const sizingArea = document.getElementById('edit_sizing_area');
@@ -1018,24 +1072,22 @@ include 'includes/header.php';
                 let clientHtml = '';
                 
                 if (p.customer_id) {
-                    // Make-to-Order: Show customer info and ENABLE the sizing checkbox visibility
                     clientHtml = `<p class="font-bold text-pink-600"><i class="fa-solid fa-user mr-2"></i>${p.customer_name}</p>
                                   <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-phone mr-2"></i>${p.contact_number || 'No contact'}</p>`;
-                    sizingToggleLabel.classList.remove('hidden');
+                    if(sizingToggleLabel) sizingToggleLabel.classList.remove('hidden');
                 } else {
-                    // Make-to-Stock: Show internal info and HIDE the sizing checkbox
                     clientHtml = `<p class="font-bold text-amber-600"><i class="fa-solid fa-boxes-stacked mr-2"></i>Internal Restock</p>
                                   <p class="text-xs text-gray-500 mt-1">Target: ${p.internal_product} (${p.internal_size})</p>`;
-                    sizingToggleLabel.classList.add('hidden');
+                    if(sizingToggleLabel) sizingToggleLabel.classList.add('hidden');
                 }
                 document.getElementById('vd_client_info').innerHTML = clientHtml;
                 
-                // Smart Checkbox Logic based on workflow type
+                const hasSizing = (result.measurements && result.measurements.length > 0) || (result.sizes && result.sizes.length > 0);
+                const toggleBtn = document.getElementById('edit_enable_sizing_toggle');
+                
                 if (p.customer_id) {
-                    const hasSizing = (result.measurements && result.measurements.length > 0) || (result.sizes && result.sizes.length > 0);
-                    
                     if (hasSizing) {
-                        document.getElementById('edit_enable_sizing_toggle').checked = true;
+                        toggleBtn.checked = true;
                         toggleEditSizingModule();
 
                         if (result.measurements && result.measurements.length > 0) {
@@ -1048,13 +1100,12 @@ include 'includes/header.php';
                             result.sizes.forEach(s => addEditStandardRow(s.size_label, s.quantity));
                         }
                     } else {
-                        document.getElementById('edit_enable_sizing_toggle').checked = false;
+                        toggleBtn.checked = false;
                         toggleEditSizingModule();
                         addEditStandardRow('', p.quantity);
                     }
                 } else {
-                    // If it is Internal Restock, force the checkbox off and trigger the UI reset
-                    document.getElementById('edit_enable_sizing_toggle').checked = false;
+                    toggleBtn.checked = false;
                     toggleEditSizingModule();
                 }
             }
@@ -1138,10 +1189,30 @@ include 'includes/header.php';
         btn.disabled = true;
 
         try {
-            const res = await fetch('actions/update_project.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if ((await res.json()).status === 'success') window.location.reload();
-            else { alert("Error updating project"); btn.disabled = false; btn.innerHTML = "Update Project Details"; }
-        } catch (e) { alert("Network Error"); btn.disabled = false; btn.innerHTML = "Update Project Details"; }
+            const response = await fetch('actions/update_project.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const rawText = await response.text();
+            
+            try {
+                const result = JSON.parse(rawText);
+                if (result.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert("Database Logic Error: " + result.message); 
+                    btn.disabled = false; 
+                    btn.innerHTML = "Update Project Details";
+                }
+            } catch (jsonError) {
+                console.error("Raw Server Response:", rawText);
+                alert("PHP Error in update_project.php:\n\n" + rawText.substring(0, 500));
+                btn.disabled = false; 
+                btn.innerHTML = "Update Project Details";
+            }
+            
+        } catch (error) { 
+            alert("True Network Fetch Error: " + error.message); 
+            btn.disabled = false; 
+            btn.innerHTML = "Update Project Details"; 
+        }
     }
 </script>
 
