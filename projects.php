@@ -246,7 +246,7 @@ include 'includes/header.php';
     <div id="create-project-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCreateProjectModal()"></div>
         
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
             
             <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Create New Project</h3>
@@ -255,152 +255,159 @@ include 'includes/header.php';
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto flex-1">
-                <form id="create-project-form" class="space-y-5">
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Project Name / Description</label>
-                            <input type="text" id="cp_project_name" placeholder="e.g., LGU Polo Shirts" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
-                        </div>
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Due Date</label>
-                            <input type="date" id="cp_due_date" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-100 dark:border-zinc-800 space-y-4">
-                        <div class="flex justify-between items-center">
-                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">Quantity & Sizing</label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="enable-sizing-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleSizingModule()">
-                                <span class="text-xs font-bold text-pink-600 dark:text-pink-500">Specify Sizes / Measurements</span>
-                            </label>
-                        </div>
-
-                        <div class="flex items-center gap-4">
-                            <div class="w-1/3">
-                                <label class="block text-[10px] font-bold text-gray-500 dark:text-zinc-500 mb-1 uppercase">Total Quantity</label>
-                                <input type="number" id="cp_total_quantity" min="1" value="1" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold shadow-sm">
-                            </div>
-                            <div id="qty-warning" class="w-2/3 hidden">
-                                <p class="text-[10px] font-semibold text-amber-600 dark:text-amber-500"><i class="fa-solid fa-circle-info"></i> Quantity is locked. It will auto-calculate based on your Standard Sizing breakdown below.</p>
-                            </div>
-                        </div>
-
-                        <div id="sizing-area" class="hidden space-y-4 pt-2 border-t border-gray-200 dark:border-zinc-800">
-                            <div class="flex gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="sizing_type" value="standard" checked onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500">
-                                    <span class="text-sm font-bold text-gray-700 dark:text-zinc-300">Standard Sizes (S, M, L)</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="sizing_type" value="custom" onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500">
-                                    <span class="text-sm font-bold text-gray-700 dark:text-zinc-300">Custom Measurements</span>
-                                </label>
-                            </div>
-
-                            <div id="standard-sizing-wrapper" class="space-y-2">
-                                <table class="w-full text-left">
-                                    <thead>
-                                        <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
-                                            <th class="pb-2 w-2/3">Size Label (e.g., Small, 32, XL)</th>
-                                            <th class="pb-2 w-1/4">Qty</th>
-                                            <th class="pb-2 w-8"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="standard-sizing-tbody"></tbody>
-                                </table>
-                                <button type="button" onclick="addStandardSizeRow()" class="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
-                                    <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
-                                </button>
-                            </div>
-
-                            <div id="custom-sizing-wrapper" class="hidden space-y-2">
-                                <table class="w-full text-left">
-                                    <thead>
-                                        <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
-                                            <th class="pb-2 w-1/2">Body Part (e.g., Waist, Chest)</th>
-                                            <th class="pb-2 w-1/4">Measurement</th>
-                                            <th class="pb-2 w-1/4">Unit</th>
-                                            <th class="pb-2 w-8"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="custom-sizing-tbody"></tbody>
-                                </table>
-                                <button type="button" onclick="addCustomMeasureRow()" class="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
-                                    <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Measurement
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-3 uppercase tracking-wide">Production Workflow</label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm focus:outline-none has-[:checked]:border-pink-600 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/10 transition-all">
-                                <input type="radio" name="workflow_type" value="customer" class="sr-only" checked onchange="toggleWorkflow()">
-                                <div class="flex items-center gap-3">
-                                    <div class="text-pink-600 dark:text-pink-500 text-xl"><i class="fa-solid fa-users"></i></div>
-                                    <div>
-                                        <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Order</p>
-                                        <p class="text-[10px] font-semibold text-gray-500 dark:text-zinc-400 mt-0.5">For a specific client/customer</p>
-                                    </div>
-                                </div>
-                            </label>
-                            <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm focus:outline-none has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:has-[:checked]:bg-amber-900/10 transition-all">
-                                <input type="radio" name="workflow_type" value="internal" class="sr-only" onchange="toggleWorkflow()">
-                                <div class="flex items-center gap-3">
-                                    <div class="text-amber-500 text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
-                                    <div>
-                                        <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Stock</p>
-                                        <p class="text-[10px] font-semibold text-gray-500 dark:text-zinc-400 mt-0.5">Internal shop inventory restock</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="section-customer" class="space-y-4 bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-100 dark:border-zinc-800">
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">Select Client</label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="new-customer-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleNewCustomer()">
-                                <span class="text-xs font-bold text-pink-600 dark:text-pink-500">Insert New Client</span>
-                            </label>
-                        </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50/30 dark:bg-zinc-950/30">
+                <form id="create-project-form">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
                         
-                        <div id="existing-customer-div">
-                            <select id="cp_existing_customer" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-sm">
-                                <option value="">-- Choose Existing Client --</option>
-                                <?php foreach($customers as $c): ?>
-                                    <option value="<?= $c['customer_id'] ?>"><?= htmlspecialchars($c['full_name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="lg:col-span-7 flex flex-col gap-5">
+                            
+                            <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
+                                <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Project Information</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest mb-1">Project Name</label>
+                                        <input type="text" id="cp_project_name" placeholder="e.g., LGU Polo Shirts" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                                    </div>
+                                    <div class="col-span-2 md:col-span-1">
+                                        <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest mb-1">Due Date</label>
+                                        <input type="date" id="cp_due_date" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
+                                <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Production Workflow</h4>
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 p-3 shadow-sm focus:outline-none has-[:checked]:border-pink-600 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/10 transition-all">
+                                        <input type="radio" name="workflow_type" value="customer" class="sr-only" checked onchange="toggleWorkflow()">
+                                        <div class="flex items-center gap-3">
+                                            <div class="text-pink-600 dark:text-pink-500 text-lg"><i class="fa-solid fa-users"></i></div>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Order</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 p-3 shadow-sm focus:outline-none has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:has-[:checked]:bg-amber-900/10 transition-all">
+                                        <input type="radio" name="workflow_type" value="internal" class="sr-only" onchange="toggleWorkflow()">
+                                        <div class="flex items-center gap-3">
+                                            <div class="text-amber-500 text-lg"><i class="fa-solid fa-boxes-stacked"></i></div>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Stock</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div id="section-customer" class="space-y-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Select Client</label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" id="new-customer-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleNewCustomer()">
+                                            <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Insert New Client</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div id="existing-customer-div">
+                                        <select id="cp_existing_customer" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-sm">
+                                            <option value="">-- Choose Existing Client --</option>
+                                            <?php foreach($customers as $c): ?>
+                                                <option value="<?= $c['customer_id'] ?>"><?= htmlspecialchars($c['full_name']) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <div id="new-customer-div" class="hidden space-y-3">
+                                        <input type="text" id="cp_new_cust_name" placeholder="Full Name / Organization" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <input type="text" id="cp_new_cust_contact" placeholder="Contact Number" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                                            <input type="text" id="cp_new_cust_address" placeholder="Address (Optional)" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="section-internal" class="hidden space-y-2">
+                                    <label class="block text-[10px] font-extrabold text-amber-600 dark:text-amber-500 uppercase tracking-widest">Target Product (Finished Goods)</label>
+                                    <select id="cp_target_product" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-amber-200 dark:border-amber-800/50 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all text-sm font-medium shadow-sm">
+                                        <option value="">-- Choose Product to Restock --</option>
+                                        <?php foreach($products as $p): ?>
+                                            <option value="<?= $p['product_id'] ?>"><?= htmlspecialchars($p['product_name']) ?> (Size: <?= htmlspecialchars($p['size']) ?>)</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
                         </div>
 
-                        <div id="new-customer-div" class="hidden space-y-4">
-                            <input type="text" id="cp_new_cust_name" placeholder="Full Name / Organization" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
-                            <div class="grid grid-cols-2 gap-4">
-                                <input type="text" id="cp_new_cust_contact" placeholder="Contact Number" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
-                                <input type="text" id="cp_new_cust_address" placeholder="Address (Optional)" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
+                        <div class="lg:col-span-5 relative min-h-[400px] lg:min-h-0">
+                            <div class="lg:absolute inset-0 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col h-full">
+                                
+                                <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
+                                    <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Quantity & Sizing</h4>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="enable-sizing-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleSizingModule()">
+                                        <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Enable Sizing</span>
+                                    </label>
+                                </div>
+
+                                <div class="flex-none mb-4 relative">
+                                    <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest mb-1">Total Quantity</label>
+                                    <input type="number" id="cp_total_quantity" min="1" value="1" class="w-1/2 px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold shadow-sm">
+                                    <p id="qty-warning" class="hidden text-[9px] font-semibold text-amber-500 mt-1 leading-tight absolute left-0 -bottom-4">Auto-calculated from sizes.</p>
+                                </div>
+
+                                <div id="sizing-area" class="hidden flex-1 overflow-hidden flex flex-col border-t border-gray-100 dark:border-zinc-800 pt-3 min-h-0">
+                                    <div class="flex gap-4 mb-3 flex-none">
+                                        <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                            <input type="radio" name="sizing_type" value="standard" checked onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500"> Standard
+                                        </label>
+                                        <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                            <input type="radio" name="sizing_type" value="custom" onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500"> Custom
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex-1 overflow-y-auto pr-1 min-h-0">
+                                        <div id="standard-sizing-wrapper" class="space-y-2">
+                                            <table class="w-full text-left relative">
+                                                <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
+                                                    <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                                        <th class="pb-2 pt-1 w-3/5">Size Label</th>
+                                                        <th class="pb-2 pt-1 w-1/4">Qty</th>
+                                                        <th class="pb-2 pt-1 w-8"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="standard-sizing-tbody"></tbody>
+                                            </table>
+                                            <button type="button" onclick="addStandardSizeRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                                <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
+                                            </button>
+                                        </div>
+
+                                        <div id="custom-sizing-wrapper" class="hidden space-y-2">
+                                            <table class="w-full text-left relative">
+                                                <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
+                                                    <tr class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-400 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-700">
+                                                        <th class="pb-2 pt-1 w-2/5">Body Part</th>
+                                                        <th class="pb-2 pt-1 w-1/4">Value</th>
+                                                        <th class="pb-2 pt-1 w-1/4">Unit</th>
+                                                        <th class="pb-2 pt-1 w-8"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="custom-sizing-tbody"></tbody>
+                                            </table>
+                                            <button type="button" onclick="addCustomMeasureRow()" class="mt-3 text-[11px] font-bold text-pink-600 hover:text-pink-700 transition-colors focus:outline-none">
+                                                <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Measurement
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div id="section-internal" class="hidden space-y-4 bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                        <label class="block text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-wide">Target Product (Finished Goods)</label>
-                        <select id="cp_target_product" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-sm font-medium shadow-sm">
-                            <option value="">-- Choose Product to Restock --</option>
-                            <?php foreach($products as $p): ?>
-                                <option value="<?= $p['product_id'] ?>"><?= htmlspecialchars($p['product_name']) ?> (Size: <?= htmlspecialchars($p['size']) ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
                     </div>
-
                 </form>
             </div>
 
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3 mt-auto">
                 <button type="button" onclick="closeCreateProjectModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
                 <button type="button" onclick="submitNewProject(false)" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-5 py-2.5 rounded-xl transition-all text-sm font-bold shadow-sm focus:outline-none">Save Only</button>
                 <button type="button" onclick="submitNewProject(true)" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 focus:outline-none flex items-center gap-2">Save & Proceed to Costing <i class="fa-solid fa-arrow-right"></i></button>
