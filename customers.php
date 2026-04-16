@@ -25,7 +25,7 @@ $pm_stmt->execute();
 $db_methods_result = $pm_stmt->get_result();
 
 // 1. Define our mandatory defaults
-$default_methods = ['Cash', 'GCash', 'Bank Transfer', 'Check'];
+$default_methods = ['Cash', 'GCash', 'Bank Transfer'];
 $final_methods = [];
 
 // 2. Add defaults to our final list using lowercase as the "Key" to prevent duplicates
@@ -300,9 +300,9 @@ include 'includes/header.php';
     async function saveCustomer() {
         const payload = {
             customer_id: document.getElementById('cm_id').value,
-            full_name: document.getElementById('cm_name').value,
-            contact_number: document.getElementById('cm_contact').value,
-            address: document.getElementById('cm_address').value
+            full_name: document.getElementById('cm_name').value.trim(),
+            contact_number: document.getElementById('cm_contact').value.trim(),
+            address: document.getElementById('cm_address').value.trim()
         };
 
         if(!payload.full_name) return alert("Name is required!");
@@ -345,7 +345,7 @@ include 'includes/header.php';
                 document.getElementById('det_name').textContent = c.full_name;
                 document.getElementById('det_id').textContent = `CUST-${String(c.customer_id).padStart(4, '0')}`;
 
-                                // Render Projects
+                // Render Projects
                 let projHtml = '';
                 if(data.projects.length === 0) projHtml = '<p class="text-sm text-gray-500 dark:text-zinc-500 italic">No active projects found.</p>';
                 
@@ -389,6 +389,7 @@ include 'includes/header.php';
     function openPaymentModal(projectId, maxAmount) {
         document.getElementById('pay_project_id').value = projectId;
         document.getElementById('pay_amount').value = maxAmount; // Auto-fill with remaining balance
+        document.getElementById('pay_method').value = ''; // Reset the combobox
         document.getElementById('pay_ref').value = '';
         document.getElementById('payment-modal').classList.remove('hidden');
     }
@@ -399,11 +400,13 @@ include 'includes/header.php';
         const payload = {
             project_id: document.getElementById('pay_project_id').value,
             amount_paid: document.getElementById('pay_amount').value,
-            payment_method: document.getElementById('pay_method').value,
-            reference_number: document.getElementById('pay_ref').value
+            payment_method: document.getElementById('pay_method').value.trim(), // Force trim to remove empty spaces
+            reference_number: document.getElementById('pay_ref').value.trim()
         };
 
+        // Strict Validation Check
         if(payload.amount_paid <= 0) return alert("Amount must be greater than zero.");
+        if(!payload.payment_method) return alert("Please select or type a Payment Method.");
 
         try {
             const res = await fetch('actions/save_payment.php', {
