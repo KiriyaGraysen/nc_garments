@@ -18,12 +18,16 @@ $sqlScript .= "-- Generated on: " . date('Y-m-d H:i:s') . "\n\n";
 $sqlScript .= "SET FOREIGN_KEY_CHECKS = 0;\n\n"; 
 
 foreach ($tables as $table) {
-    // 🔥 THE FIX: Tell the SQL file to delete the old table before creating the new one!
+    // Tell the SQL file to delete the old table before creating the new one!
     $sqlScript .= "DROP TABLE IF EXISTS `$table`;\n";
     
     $result = $conn->query("SHOW CREATE TABLE $table");
     $row = $result->fetch_row();
-    $sqlScript .= $row[1] . ";\n\n";
+    
+    // 🛡️ THE FIX: Scrub out hardcoded constraint names using Regex so MySQL auto-generates unique ones!
+    $clean_create_sql = preg_replace('/CONSTRAINT `[^`]+` FOREIGN KEY/', 'FOREIGN KEY', $row[1]);
+    
+    $sqlScript .= $clean_create_sql . ";\n\n";
     
     $result = $conn->query("SELECT * FROM $table");
     $columnCount = $result->field_count;
