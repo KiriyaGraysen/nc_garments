@@ -66,7 +66,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style type="text/tailwindcss">
@@ -121,11 +120,18 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </button>
         </div>
         
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            
+            <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-2">Main Menu</p>
             
             <a href="index.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'index.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-house w-5 text-center transition-colors <?php echo ($current_page == 'index.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Dashboard</span>
+            </a>
+
+            <a href="pos.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'pos.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-cash-register w-5 text-center transition-colors <?php echo ($current_page == 'pos.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Point of Sale</span>
             </a>
 
             <a href="projects.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'projects.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
@@ -143,13 +149,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <span class="font-bold text-sm tracking-wide">Customers & Payments</span>
             </a>
             
+            <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-6">Analytics</p>
+
+            <a href="reports.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'reports.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
+                <i class="fa-solid fa-chart-pie w-5 text-center transition-colors <?php echo ($current_page == 'reports.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <span class="font-bold text-sm tracking-wide">Financial Reports</span>
+            </a>
+
+            <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-6">Administration</p>
+
             <a href="staff.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'staff.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-shield-halved w-5 text-center transition-colors <?php echo ($current_page == 'staff.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Staff Access</span>
             </a>
             
             <a href="system_activity.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'system_activity.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
-                <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors <?php echo ($current_page == 'system_activiyt.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
+                <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors <?php echo ($current_page == 'system_activity.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">System Activity</span>
             </a>
             
