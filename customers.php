@@ -19,6 +19,34 @@ $stmt->bind_param("i", $view_archived);
 $stmt->execute();
 $customers_result = $stmt->get_result();
 
+// Fetch unique payment methods used in the past
+$pm_stmt = $conn->prepare("SELECT DISTINCT payment_method FROM payment WHERE payment_method IS NOT NULL AND payment_method != ''");
+$pm_stmt->execute();
+$db_methods_result = $pm_stmt->get_result();
+
+// 1. Define our mandatory defaults
+$default_methods = ['Cash', 'GCash', 'Bank Transfer', 'Check'];
+$final_methods = [];
+
+// 2. Add defaults to our final list using lowercase as the "Key" to prevent duplicates
+foreach ($default_methods as $method) {
+    $final_methods[strtolower($method)] = $method;
+}
+
+// 3. Loop through database history and add them only if they don't already exist
+while ($row = $db_methods_result->fetch_assoc()) {
+    $db_method = trim($row['payment_method']);
+    $lower_key = strtolower($db_method);
+    
+    // If it's not already in our list, add it!
+    if (!isset($final_methods[$lower_key])) {
+        $final_methods[$lower_key] = $db_method;
+    }
+}
+
+// 4. Sort them alphabetically for a clean dropdown UI
+sort($final_methods);
+
 function format_contact_number($phone) {
     if (empty($phone)) return '';
     
@@ -226,13 +254,17 @@ include 'includes/header.php';
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Payment Method *</label>
-                    <select id="pay_method" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
-                        <option value="Cash">Cash</option>
-                        <option value="GCash">GCash</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Check">Check</option>
-                    </select>
+                    <input list="payment_methods_list" id="pay_method" placeholder="Select or type a method..." required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                    <datalist id="payment_methods_list">
+                        <?php 
+                        // Automatically populate with our deduplicated, sorted list!
+                        foreach($final_methods as $method) {
+                            echo '<option value="' . htmlspecialchars($method) . '"></option>';
+                        }
+                        ?>
+                    </datalist>
                 </div>
+
                 <div>
                     <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Reference No. (Optional)</label>
                     <input type="text" id="pay_ref" placeholder="e.g., GCash Ref No." class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
