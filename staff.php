@@ -1,8 +1,8 @@
 <?php
 require_once('config/database.php');
 
-// SECURITY KICK-OUT: Only let Superadmins manage staff
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+// SECURITY KICK-OUT: Let both Admins and Superadmins access the management page
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     header("Location: index.php");
     exit();
 }
@@ -62,7 +62,7 @@ include 'includes/header.php';
         </div>
         <?php if ($view !== 'archived'): ?>
         <button onclick="openStaffModal()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-pink-600/20 flex items-center gap-2 cursor-pointer focus:outline-none">
-            <i class="fa-solid fa-user-shield"></i> Provision New Account
+            <i class="fa-solid fa-user-plus"></i> Provision New Account
         </button>
         <?php endif; ?>
     </div>
@@ -127,6 +127,21 @@ include 'includes/header.php';
                         $status = htmlspecialchars($staff['status']);
                         $role = htmlspecialchars($staff['role']);
                         
+                        // Dynamic styling based on the new roles
+                        $role_class = '';
+                        $role_icon = '';
+                        
+                        if ($role === 'superadmin') {
+                            $role_class = 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20';
+                            $role_icon = 'fa-crown';
+                        } elseif ($role === 'admin') {
+                            $role_class = 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 border-pink-200 dark:border-pink-500/20';
+                            $role_icon = 'fa-user-shield';
+                        } else {
+                            $role_class = 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 border-gray-200 dark:border-zinc-700';
+                            $role_icon = 'fa-user';
+                        }
+
                         // Safety check: Is this row the current logged-in user?
                         $is_current_user = ($staff['admin_id'] == $_SESSION['admin_id']);
                         
@@ -147,8 +162,8 @@ include 'includes/header.php';
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="' . ($role === 'admin' ? 'bg-pink-50 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20' : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 border-gray-200 dark:border-zinc-700') . ' text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center w-max gap-1.5">
-                                        <i class="fa-solid ' . ($role === 'admin' ? 'fa-crown' : 'fa-user') . ' text-[10px]"></i>' . $role . '
+                                    <span class="' . $role_class . ' text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider flex items-center w-max gap-1.5 border">
+                                        <i class="fa-solid ' . $role_icon . ' text-[11px]"></i>' . $role . '
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">';
@@ -243,6 +258,7 @@ include 'includes/header.php';
                         <select id="staff_role" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
                             <option value="staff">Staff</option>
                             <option value="admin">Admin</option>
+                            <option value="superadmin">Superadmin</option>
                         </select>
                     </div>
                 </div>
