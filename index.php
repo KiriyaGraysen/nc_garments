@@ -23,7 +23,7 @@ $total_sales = $sales_stmt->fetch_assoc()['total'];
 $active_stmt = $conn->query("SELECT COUNT(*) as count FROM project WHERE status = 'active' AND is_archived = 0");
 $active_orders = $active_stmt->fetch_assoc()['count'];
 
-// Total Receivables (Total Agreed Price of Active Projects - Total Payments for Active Projects)
+// Total Receivables
 $rec_stmt = $conn->query("
     SELECT 
         (SELECT COALESCE(SUM(agreed_price), 0) FROM project WHERE status = 'active' AND is_archived = 0) - 
@@ -31,7 +31,7 @@ $rec_stmt = $conn->query("
 ");
 $receivables = $rec_stmt->fetch_assoc()['total_receivables'];
 
-// Low Stock Alerts (Raw Materials + Premade Products)
+// Low Stock Alerts
 $low_stmt = $conn->query("
     SELECT 
         (SELECT COUNT(*) FROM premade_product WHERE current_stock <= min_stock_alert AND is_archived = 0) +
@@ -44,7 +44,6 @@ $low_stock = $low_stmt->fetch_assoc()['total_low'];
 // 2. CHART DATA (LAST 6 MONTHS REVENUE VS PROFIT)
 // ========================================================
 $months = [];
-// Generate an array of the last 6 months dynamically (e.g., '2026-04' => ['label' => 'Apr', 'rev' => 0, 'cost' => 0])
 for ($i = 5; $i >= 0; $i--) {
     $month_key = date('Y-m', strtotime("-$i months"));
     $months[$month_key] = [
@@ -54,7 +53,6 @@ for ($i = 5; $i >= 0; $i--) {
     ];
 }
 
-// Fetch Revenue (Payments) for the last 6 months
 $chart_rev = $conn->query("
     SELECT DATE_FORMAT(payment_date, '%Y-%m') as month_year, SUM(amount_paid) as total_rev
     FROM payment
@@ -65,7 +63,6 @@ while ($row = $chart_rev->fetch_assoc()) {
     if (isset($months[$row['month_year']])) $months[$row['month_year']]['revenue'] += $row['total_rev'];
 }
 
-// Fetch Costs (Breakdowns) for projects created in the last 6 months
 $chart_cost = $conn->query("
     SELECT DATE_FORMAT(p.created_at, '%Y-%m') as month_year, SUM(pb.total_cost) as total_cost
     FROM project p
@@ -77,14 +74,13 @@ while ($row = $chart_cost->fetch_assoc()) {
     if (isset($months[$row['month_year']])) $months[$row['month_year']]['cost'] += $row['total_cost'];
 }
 
-// Find the maximum revenue month to scale our CSS bar heights dynamically
 $max_val = 1; 
 foreach ($months as $m) {
     if ($m['revenue'] > $max_val) $max_val = $m['revenue'];
 }
 
 // ========================================================
-// 3. UPCOMING DEADLINES
+// 3. UPCOMING DEADLINES (Top 3 for Dashboard)
 // ========================================================
 $deadlines_stmt = $conn->query("
     SELECT p.project_id, p.project_name, p.quantity, p.due_date, p.progress, 
@@ -96,7 +92,6 @@ $deadlines_stmt = $conn->query("
     LIMIT 3
 ");
 
-// Calculate how many active projects are left over for the "+ X more" button
 $remaining_projects = max(0, $active_orders - $deadlines_stmt->num_rows);
 
 $progress_percentages = [
@@ -106,12 +101,29 @@ $progress_percentages = [
     'released' => 100, 'cancelled' => 0
 ];
 
+// ========================================================
+// 4. ALL DEADLINES FOR CALENDAR MODAL
+// ========================================================
+$all_deadlines_stmt = $conn->query("
+    SELECT p.project_id, p.project_name, p.quantity, p.due_date, p.progress, 
+           COALESCE(c.full_name, 'Internal Restock') as client_name
+    FROM project p
+    LEFT JOIN customer c ON p.customer_id = c.customer_id
+    WHERE p.status = 'active' AND p.is_archived = 0
+    ORDER BY p.due_date ASC
+");
+
+$calendar_projects = [];
+while ($row = $all_deadlines_stmt->fetch_assoc()) {
+    $date_key = date('Y-m-d', strtotime($row['due_date']));
+    $calendar_projects[$date_key][] = $row; // Group projects by exact due date
+}
 
 $page_title = "Dashboard | NC Garments";
 include 'includes/header.php'; 
 ?>
 
-        <main class="flex-1 bg-gray-50 dark:bg-zinc-950 p-8 overflow-y-auto transition-colors duration-500 font-sans">
+        <main class="flex-1 bg-gray-50 dark:bg-zinc-950 p-8 overflow-y-auto transition-colors duration-500 font-sans relative">
         
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
@@ -221,9 +233,7 @@ include 'includes/header.php';
                     </div>
                     
                     <div class="flex-grow flex items-end gap-4 h-64 pt-4 border-b border-gray-100 dark:border-zinc-800 pb-2">
-                        
                         <?php 
-                        // Loop through our calculated PHP months array to render the CSS bars!
                         $counter = 0;
                         $total_months = count($months);
                         foreach ($months as $m): 
@@ -232,16 +242,11 @@ include 'includes/header.php';
                             $cost = $m['cost'];
                             $profit = max(0, $rev - $cost);
                             
-                            // Height logic for CSS
                             $height_pct = ($max_val > 0) ? ($rev / $max_val) * 100 : 0;
-                            if ($height_pct < 5 && $rev > 0) $height_pct = 5; // Minimum visible height
+                            if ($height_pct < 5 && $rev > 0) $height_pct = 5;
                             
                             $inner_height_pct = ($rev > 0) ? ($profit / $rev) * 100 : 0;
-                            
-                            // Formatting the number text
                             $label = $rev >= 1000 ? round($rev / 1000, 1) . 'k' : $rev;
-                            
-                            // Style logic (highlight the most recent month)
                             $is_current = ($counter === $total_months);
                         ?>
                             <div class="flex-1 flex flex-col justify-end items-center group cursor-pointer" title="Revenue: ₱<?= number_format($rev,2) ?> | Cost: ₱<?= number_format($cost,2) ?>">
@@ -254,7 +259,6 @@ include 'includes/header.php';
                                 <span class="text-xs <?= $is_current ? 'text-pink-600 dark:text-pink-400 font-extrabold' : 'text-gray-500 dark:text-zinc-500 font-bold' ?> mt-3 uppercase"><?= $m['label'] ?></span>
                             </div>
                         <?php endforeach; ?>
-                        
                     </div>
                     
                     <div class="flex justify-center gap-6 mt-5">
@@ -272,11 +276,12 @@ include 'includes/header.php';
                 <div class="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl p-6 shadow-sm transition-colors duration-500 flex flex-col">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Upcoming Deadlines</h3>
-                        <a href="projects.php" class="text-xs font-bold text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 uppercase tracking-wide">View Timeline</a>
+                        <button onclick="openTimelineModal()" class="text-xs font-bold text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 uppercase tracking-wide focus:outline-none flex items-center gap-1">
+                            <i class="fa-regular fa-calendar-days"></i> View Timeline
+                        </button>
                     </div>
     
                     <div class="space-y-4 flex-grow">
-                        
                         <?php 
                         if ($deadlines_stmt->num_rows === 0) {
                             echo '<div class="text-center text-sm text-gray-500 py-8 italic">No upcoming deadlines.</div>';
@@ -288,20 +293,14 @@ include 'includes/header.php';
                             $day = $due_date->format('d');
                             $pct = $progress_percentages[$project['progress']] ?? 0;
                             
-                            // Calculate days left to determine UI colors
                             $today = new DateTime('today');
                             $due_date->setTime(0, 0, 0); 
                             $diff = $today->diff($due_date);
                             $days_left = $diff->invert ? -$diff->days : $diff->days;
                             
-                            // Dynamic color engine
-                            if ($days_left <= 0) { // Overdue or Due Today
-                                $color = 'rose';
-                            } elseif ($days_left <= 7) { // Due within a week
-                                $color = 'amber';
-                            } else { // Safe
-                                $color = 'emerald';
-                            }
+                            if ($days_left <= 0) { $color = 'rose'; } 
+                            elseif ($days_left <= 7) { $color = 'amber'; } 
+                            else { $color = 'emerald'; }
                         ?>
                         <div class="flex gap-4 group cursor-pointer items-center" onclick="window.location.href='projects.php'">
                             <div class="flex flex-col items-center min-w-[3rem]">
@@ -317,7 +316,6 @@ include 'includes/header.php';
                             </div>
                         </div>
                         <?php endwhile; ?>
-
                     </div>
                     
                     <?php if ($remaining_projects > 0): ?>
@@ -330,5 +328,224 @@ include 'includes/header.php';
             </div>
     
         </main>
+
+        <div id="timeline-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeTimelineModal()"></div>
+            
+            <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col h-[80vh] max-h-[800px] border border-gray-100 dark:border-zinc-800">
+                
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Project Timeline Calendar</h3>
+                        <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">Select a date to view production deadlines and progress.</p>
+                    </div>
+                    <button onclick="closeTimelineModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
+                    
+                    <div class="w-full md:w-[55%] p-6 border-r border-gray-100 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-900">
+                        
+                        <div class="flex justify-between items-center mb-6">
+                            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-500 hover:text-pink-600 dark:hover:text-pink-500 transition-colors flex items-center justify-center focus:outline-none">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </button>
+                            <h4 class="text-base font-black text-gray-900 dark:text-white uppercase tracking-widest" id="calendar-month-year">MONTH YYYY</h4>
+                            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-500 hover:text-pink-600 dark:hover:text-pink-500 transition-colors flex items-center justify-center focus:outline-none">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-7 mb-2">
+                            <div class="text-center text-[10px] font-extrabold text-rose-500 uppercase tracking-widest">Sun</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Mon</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Tue</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Wed</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Thu</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Fri</div>
+                            <div class="text-center text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">Sat</div>
+                        </div>
+
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-2 flex-grow auto-rows-fr">
+                            </div>
+                        
+                        <div class="mt-6 flex items-center gap-4 justify-center">
+                            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Has Deadlines</span></div>
+                            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border-2 border-pink-500"></span><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Today</span></div>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-[45%] p-6 bg-gray-50/50 dark:bg-zinc-950/30 overflow-y-auto" id="calendar-details">
+                        <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-50">
+                            <i class="fa-regular fa-calendar-check text-4xl"></i>
+                            <p class="text-xs font-bold uppercase tracking-wider">Select a date to view deadlines</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const calendarData = <?php echo json_encode($calendar_projects); ?>;
+            const progressMap = <?php echo json_encode($progress_percentages); ?>;
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            let dateCursor = new Date(); // Start at current date
+            let currentMonth = dateCursor.getMonth();
+            let currentYear = dateCursor.getFullYear();
+            let selectedDateStr = null;
+
+            function openTimelineModal() {
+                document.getElementById('timeline-modal').classList.remove('hidden');
+                renderCalendar(currentMonth, currentYear);
+                
+                // Automatically select today if there are projects
+                const todayStr = getLocalYYYYMMDD(new Date());
+                selectDate(todayStr, true);
+            }
+
+            function closeTimelineModal() {
+                document.getElementById('timeline-modal').classList.add('hidden');
+            }
+
+            function changeMonth(offset) {
+                currentMonth += offset;
+                if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+                if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+                renderCalendar(currentMonth, currentYear);
+            }
+            
+            // Helper to prevent timezone shifting issues
+            function getLocalYYYYMMDD(dateObj) {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            function renderCalendar(month, year) {
+                document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+                const grid = document.getElementById('calendar-grid');
+                grid.innerHTML = '';
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                const todayStr = getLocalYYYYMMDD(new Date());
+
+                // Blank cells for previous month
+                for (let i = 0; i < firstDay; i++) {
+                    grid.innerHTML += `<div class="rounded-xl border border-transparent"></div>`;
+                }
+
+                // Actual days
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateObj = new Date(year, month, day);
+                    const dateStr = getLocalYYYYMMDD(dateObj);
+                    
+                    const hasProjects = calendarData.hasOwnProperty(dateStr);
+                    const isToday = (dateStr === todayStr);
+                    const isSelected = (dateStr === selectedDateStr);
+
+                    let baseClasses = "relative rounded-xl border flex items-center justify-center font-bold text-sm cursor-pointer transition-all hover:border-pink-300 dark:hover:border-pink-700 focus:outline-none ";
+                    
+                    if (isSelected) {
+                        baseClasses += "bg-pink-600 text-white border-pink-600 shadow-md shadow-pink-600/30 ";
+                    } else if (isToday) {
+                        baseClasses += "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border-pink-500 ";
+                    } else if (hasProjects) {
+                        baseClasses += "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white border-gray-200 dark:border-zinc-700 hover:bg-pink-50 dark:hover:bg-pink-900/10 ";
+                    } else {
+                        baseClasses += "bg-transparent text-gray-500 dark:text-zinc-500 border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800 ";
+                    }
+
+                    // Dot indicator
+                    const dotHtml = hasProjects && !isSelected ? `<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-500' : 'bg-pink-500'}"></span>` : '';
+
+                    grid.innerHTML += `
+                        <button onclick="selectDate('${dateStr}')" class="${baseClasses}">
+                            ${day}
+                            ${dotHtml}
+                        </button>
+                    `;
+                }
+            }
+
+            function selectDate(dateStr, isAuto = false) {
+                selectedDateStr = dateStr;
+                renderCalendar(currentMonth, currentYear); // Re-render to highlight selection
+
+                const detailsPane = document.getElementById('calendar-details');
+                const projects = calendarData[dateStr] || [];
+                
+                // Format display date
+                const dObj = new Date(dateStr + "T00:00:00"); // Force local parsing
+                const displayDate = dObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+                if (projects.length === 0) {
+                    if(isAuto) return; // Don't show empty state if auto-selecting today
+                    detailsPane.innerHTML = `
+                        <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-50">
+                            <i class="fa-regular fa-face-smile text-4xl"></i>
+                            <p class="text-xs font-bold uppercase tracking-wider text-center">No deadlines scheduled for<br><span class="text-gray-500">${displayDate}</span></p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <div class="mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">
+                        <p class="text-[10px] font-black text-pink-600 dark:text-pink-500 uppercase tracking-widest mb-1">Due Date</p>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">${displayDate}</h3>
+                        <p class="text-sm font-bold text-gray-500 dark:text-zinc-400 mt-1">${projects.length} project(s) due</p>
+                    </div>
+                    <div class="space-y-4">
+                `;
+
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const diffTime = dObj - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                let color = 'emerald';
+                if (diffDays <= 0) color = 'rose';
+                else if (diffDays <= 7) color = 'amber';
+
+                projects.forEach(p => {
+                    const pct = progressMap[p.progress] || 0;
+                    
+                    html += `
+                        <div class="bg-white dark:bg-zinc-900 border border-${color}-200 dark:border-${color}-900/30 shadow-sm rounded-xl p-4 relative overflow-hidden group hover:border-${color}-300 transition-colors">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-${color}-500"></div>
+                            
+                            <div class="flex justify-between items-start mb-2 pl-2">
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">${p.project_name}</h4>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-zinc-400">${p.client_name} (${p.quantity} pcs)</p>
+                                </div>
+                                <span class="text-[10px] font-black text-${color}-600 dark:text-${color}-400 bg-${color}-50 dark:bg-${color}-900/20 px-2 py-1 rounded uppercase tracking-widest">${p.progress}</span>
+                            </div>
+                            
+                            <div class="pl-2 mt-4">
+                                <div class="flex justify-between text-[10px] font-bold text-gray-400 dark:text-zinc-500 mb-1 tracking-wider uppercase">
+                                    <span>Progress</span>
+                                    <span>${pct}%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-${color}-500 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                detailsPane.innerHTML = html;
+            }
+        </script>
 
 <?php include 'includes/footer.php' ?>
