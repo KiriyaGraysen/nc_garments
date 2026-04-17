@@ -84,6 +84,7 @@ include 'includes/header.php';
                     <tr>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Item Details</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Stock Level</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Backordered</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Unit Price/Cost</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Status</th>
                         <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
@@ -93,33 +94,39 @@ include 'includes/header.php';
                     
                     <?php
                     if ($items_result->num_rows === 0) {
-                        echo '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
+                        echo '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
                     }
 
                     while ($item = $items_result->fetch_assoc()) {
                         
-                        // NEW LOGIC: Calculate Stock States
-                        $stock_val = (int)$item['stock'];
-                        $alert_val = (int)$item['alert'];
+                        // Treat stock as float now since we upgraded to DECIMAL
+                        $stock_val = (float)$item['stock'];
+                        $alert_val = (float)$item['alert'];
+                        
+                        // Calculate Deficit Logic
+                        $deficit = 0;
+                        $display_stock = $stock_val;
+                        
+                        if ($stock_val < 0) {
+                            $deficit = abs($stock_val); // Turn negative into positive deficit
+                            $display_stock = 0; // Cap visual stock at zero
+                        }
                         
                         $is_out_of_stock = $stock_val <= 0;
                         $is_low_stock = !$is_out_of_stock && ($stock_val <= $alert_val);
                         
                         $metric_label = $base_type === 'raw_material' ? htmlspecialchars($item['metric']) : 'Size: ' . htmlspecialchars($item['metric']);
 
-                        // Escaping for JS injection
                         $safe_sku = addslashes($item['sku']);
                         $safe_name = addslashes($item['name']);
                         $safe_metric = addslashes($item['metric']);
                         
-                        // Dynamic Row Background
                         $row_bg = '';
                         if (!$is_archived_view) {
                             if ($is_out_of_stock) $row_bg = 'bg-rose-50/30 dark:bg-rose-900/5';
                             elseif ($is_low_stock) $row_bg = 'bg-amber-50/30 dark:bg-amber-900/5';
                         }
                         
-                        // Dynamic Text Colors for the Stock Column
                         $stock_color = 'text-gray-900 dark:text-white';
                         $metric_color = 'text-gray-500';
                         $alert_color = 'text-gray-400';
@@ -144,11 +151,25 @@ include 'includes/header.php';
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-baseline gap-1">
-                                    <span class="text-lg font-extrabold '.$stock_color.'">'.$item['stock'].'</span>
+                                    <span class="text-lg font-extrabold '.$stock_color.'">'.$display_stock.'</span>
                                     <span class="text-xs font-bold '.$metric_color.' uppercase">'.$metric_label.'</span>
                                 </div>
                                 <div class="text-[10px] font-bold '.$alert_color.' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
                             </td>
+                            
+                            <td class="px-6 py-4">';
+                                if ($deficit > 0 && !$is_archived_view) {
+                                    echo '
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-base font-extrabold text-rose-600 dark:text-rose-500">'.$deficit.'</span>
+                                        <span class="text-[10px] font-bold text-rose-600/70 uppercase">'.$metric_label.'</span>
+                                    </div>
+                                    <div class="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-wider">Owed to Prod.</div>';
+                                } else {
+                                    echo '<span class="text-gray-300 dark:text-zinc-700 font-bold">--</span>';
+                                }
+                            echo '</td>
+
                             <td class="px-6 py-4">
                                 <div class="font-extrabold text-gray-900 dark:text-white">₱ '.number_format($item['price'], 2).'</div>
                                 <div class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">Per Unit</div>
@@ -159,17 +180,14 @@ include 'includes/header.php';
                                             <i class="fa-solid fa-box-archive"></i> Archived
                                           </span>';
                                 } elseif ($is_out_of_stock) {
-                                    // NO STOCK BADGE (RED/ROSE)
                                     echo '<span class="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-rose-200 dark:border-rose-500/30 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-circle-xmark"></i> Out of Stock
                                           </span>';
                                 } elseif ($is_low_stock) {
-                                    // LOW STOCK BADGE (ORANGE/AMBER)
                                     echo '<span class="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-amber-200 dark:border-amber-500/30 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-triangle-exclamation"></i> Low Stock
                                           </span>';
                                 } else {
-                                    // IN STOCK BADGE (GREEN/EMERALD)
                                     echo '<span class="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-emerald-200 dark:border-emerald-500/20 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-check"></i> In Stock
                                           </span>';
@@ -243,8 +261,8 @@ include 'includes/header.php';
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Current Stock</label>
-                        <input type="number" id="inv_stock" min="0" value="0" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Current Stock / Deficit</label>
+                        <input type="number" step="0.01" id="inv_stock" value="0.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Price / Cost (₱)</label>
@@ -263,7 +281,7 @@ include 'includes/header.php';
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Low Stock Alert</label>
-                        <input type="number" id="inv_alert" min="0" value="10" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <input type="number" step="0.01" id="inv_alert" min="0" value="10.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                     </div>
                 </div>
             </form>

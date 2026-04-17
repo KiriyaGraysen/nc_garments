@@ -77,7 +77,7 @@ try {
     }
 
     // Update the project to signify it has officially started!
-    $update_project = $conn->prepare("UPDATE project SET progress = 'cutting' WHERE project_id = ?");
+    $update_project = $conn->prepare("UPDATE project SET progress = 'sampling' WHERE project_id = ?");
     $update_project->bind_param("i", $project_id);
     $update_project->execute();
 
