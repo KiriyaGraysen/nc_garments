@@ -84,7 +84,11 @@ include 'includes/header.php';
                     <tr>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Item Details</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Stock Level</th>
+                        
+                        <?php if ($base_type === 'raw_material'): ?>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Backordered</th>
+                        <?php endif; ?>
+
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Unit Price/Cost</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Status</th>
                         <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
@@ -94,22 +98,21 @@ include 'includes/header.php';
                     
                     <?php
                     if ($items_result->num_rows === 0) {
-                        echo '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
+                        $colspan = ($base_type === 'raw_material') ? 6 : 5;
+                        echo '<tr><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
                     }
 
                     while ($item = $items_result->fetch_assoc()) {
                         
-                        // Treat stock as float now since we upgraded to DECIMAL
                         $stock_val = (float)$item['stock'];
                         $alert_val = (float)$item['alert'];
                         
-                        // Calculate Deficit Logic
                         $deficit = 0;
                         $display_stock = $stock_val;
                         
                         if ($stock_val < 0) {
-                            $deficit = abs($stock_val); // Turn negative into positive deficit
-                            $display_stock = 0; // Cap visual stock at zero
+                            $deficit = abs($stock_val);
+                            $display_stock = 0; 
                         }
                         
                         $is_out_of_stock = $stock_val <= 0;
@@ -155,9 +158,11 @@ include 'includes/header.php';
                                     <span class="text-xs font-bold '.$metric_color.' uppercase">'.$metric_label.'</span>
                                 </div>
                                 <div class="text-[10px] font-bold '.$alert_color.' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
-                            </td>
+                            </td>';
                             
-                            <td class="px-6 py-4">';
+                            // ONLY SHOW BACKORDERED COLUMN FOR RAW MATERIALS
+                            if ($base_type === 'raw_material') {
+                                echo '<td class="px-6 py-4">';
                                 if ($deficit > 0 && !$is_archived_view) {
                                     echo '
                                     <div class="flex items-baseline gap-1">
@@ -168,9 +173,10 @@ include 'includes/header.php';
                                 } else {
                                     echo '<span class="text-gray-300 dark:text-zinc-700 font-bold">--</span>';
                                 }
-                            echo '</td>
+                                echo '</td>';
+                            }
 
-                            <td class="px-6 py-4">
+                            echo '<td class="px-6 py-4">
                                 <div class="font-extrabold text-gray-900 dark:text-white">₱ '.number_format($item['price'], 2).'</div>
                                 <div class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">Per Unit</div>
                             </td>
