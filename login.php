@@ -1,13 +1,12 @@
 <?php
 require_once('config/database.php');
 
-// NEW: If they are already logged in, send them straight to the dashboard!
+// If they are already logged in, send them straight to the dashboard!
 if (isset($_SESSION['admin_id'])) {
     header("Location: index.php");
     exit();
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -70,10 +69,10 @@ if (isset($_SESSION['admin_id'])) {
                     </div>
                 </div>
 
-                <div class="mb-6">
+                <div class="mb-8">
                     <div class="flex justify-between items-center mb-1.5">
                         <label for="password" class="block text-xs font-semibold text-gray-600 dark:text-zinc-400 uppercase tracking-wide">Password</label>
-                        <a href="#" class="text-[11px] font-semibold text-pink-600 hover:text-pink-500 transition-colors">Forgot Password?</a>
+                        <a href="forgot_password.php" tabindex="-1" class="text-[11px] font-semibold text-pink-600 hover:text-pink-500 transition-colors outline-none">Forgot Password?</a>
                     </div>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-zinc-500">
@@ -82,15 +81,10 @@ if (isset($_SESSION['admin_id'])) {
                         <input type="password" id="password" required placeholder="••••••••••••" 
                                class="w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-300 placeholder-gray-400 dark:placeholder-zinc-600 text-sm tracking-widest">
                         
-                        <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-pink-500 transition-colors cursor-pointer focus:outline-none">
+                        <button type="button" tabindex="-1" onclick="togglePassword()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-pink-500 transition-colors cursor-pointer focus:outline-none">
                             <i id="eye-icon" class="fa-solid fa-eye fa-fw text-sm"></i>
                         </button>
                     </div>
-                </div>
-
-                <div class="flex items-center mb-6">
-                    <input type="checkbox" id="remember" class="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-zinc-900 focus:ring-2 dark:bg-zinc-800 dark:border-zinc-700 cursor-pointer">
-                    <label for="remember" class="ml-2 text-sm font-medium text-gray-600 dark:text-zinc-400 cursor-pointer">Keep me logged in</label>
                 </div>
 
                 <button type="submit" id="login-btn" class="w-full py-3.5 px-4 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow-lg shadow-pink-600/20 hover:shadow-pink-600/40 transition-colors duration-300 flex justify-center items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 dark:focus:ring-offset-zinc-900">
@@ -98,7 +92,7 @@ if (isset($_SESSION['admin_id'])) {
                 </button>
             </form>
 
-            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800/50">
+            <div class="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800/50">
                 <div class="flex items-start justify-center gap-2 text-center">
                     <i class="fa-solid fa-shield-halved text-gray-400 dark:text-zinc-600 mt-0.5 text-xs"></i>
                     <p class="text-[11px] text-gray-500 dark:text-zinc-500 leading-relaxed max-w-[250px]">
@@ -115,13 +109,11 @@ if (isset($_SESSION['admin_id'])) {
     
         // 1. Listen for the form submission
         loginForm.addEventListener('submit', async function(event) {
-            // Stop the page from immediately refreshing!
             event.preventDefault(); 
         
-            // 2. Grab the inputs, the button, AND the checkbox
+            // 2. Grab the inputs
             const usernameInput = document.getElementById('username').value;
             const passwordInput = document.getElementById('password').value;
-            const rememberInput = document.getElementById('remember').checked; // NEW: Grab the checkbox!
             
             const loginBtn = document.getElementById('login-btn');
             const originalBtnText = loginBtn.innerHTML;
@@ -140,8 +132,7 @@ if (isset($_SESSION['admin_id'])) {
                     },
                     body: JSON.stringify({
                         username: usernameInput,
-                        password: passwordInput,
-                        remember: rememberInput // NEW: Send the checkbox status to PHP!
+                        password: passwordInput
                     })
                 });
         
@@ -169,26 +160,22 @@ if (isset($_SESSION['admin_id'])) {
         // --- Dark Mode Toggle Logic ---
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
-        const htmlElement = document.documentElement; // Targets the <html> tag directly
+        const htmlElement = document.documentElement;
 
-        // 1. On page load, make sure the icon matches the current theme (set by header.php)
         if (htmlElement.classList.contains('dark')) {
             updateToggleUI(true);
         }
 
-        // 2. Listen for the toggle button click
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', () => {
                 htmlElement.classList.toggle('dark');
                 const isDark = htmlElement.classList.contains('dark');
                 
-                // Save preference so the header.php catches it on next refresh
                 localStorage.theme = isDark ? 'dark' : 'light';
                 updateToggleUI(isDark);
             });
         }
 
-        // 3. Update the Moon/Sun icon visually
         function updateToggleUI(isDark) {
             if (themeIcon) {
                 if (isDark) {
