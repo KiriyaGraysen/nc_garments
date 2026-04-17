@@ -155,7 +155,6 @@ include 'includes/header.php';
                         
                         $latest_date = $cust['latest_payment_date'] ? date('M d, Y', strtotime($cust['latest_payment_date'])) : 'No Payments Yet';
 
-                        // Added 'customer-row' class for JS targeting
                         echo '
                         <tr class="customer-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewCustomerDetails('.$cust['customer_id'].')">
                             <td class="px-6 py-4">
@@ -203,7 +202,6 @@ include 'includes/header.php';
                                       <i class="fa-solid fa-trash"></i>
                                   </button>';
                         } else {
-                            // Added Restore button for consistency with inventory if they are in the archived view
                             echo '<button onclick="event.stopPropagation(); restoreCustomer('.$cust['customer_id'].')" class="text-gray-400 hover:text-emerald-600 focus:outline-none p-2" title="Restore Customer">
                                       <i class="fa-solid fa-clock-rotate-left"></i>
                                   </button>';
@@ -490,11 +488,9 @@ include 'includes/header.php';
         } catch (e) { alert("Network Error"); }
     }
 
-    // --- ADDED MISSING RESTORE FUNCTION ---
     async function restoreCustomer(id) {
         if(!confirm("Restore this customer?")) return;
         try {
-            // Reusing the same endpoint logic pattern as inventory
             const res = await fetch('actions/restore_customer.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: id })
             });
@@ -541,16 +537,21 @@ include 'includes/header.php';
                 });
                 document.getElementById('det_projects').innerHTML = projHtml;
 
-                // Render Payments
+                // 🚨 NEW: Render Payments with Hover "Void" button
                 let payHtml = '';
                 if(data.payments.length === 0) payHtml = '<p class="text-sm text-gray-500 dark:text-zinc-500 italic">No payments recorded.</p>';
                 
                 data.payments.forEach(pay => {
                     payHtml += `
-                    <div class="border-b border-gray-100 dark:border-zinc-800 pb-3 mb-3">
-                        <p class="font-bold text-emerald-600 dark:text-emerald-500">+ ₱${formatCurrency(pay.amount_paid)} <span class="text-xs text-gray-400 dark:text-zinc-500 font-normal">(${pay.payment_method})</span></p>
-                        <p class="text-xs text-gray-600 dark:text-zinc-300 mt-0.5">For: ${pay.project_name}</p>
-                        <p class="text-[10px] text-gray-400 dark:text-zinc-500 mt-0.5">${new Date(pay.payment_date).toLocaleDateString()}</p>
+                    <div class="border-b border-gray-100 dark:border-zinc-800 pb-3 mb-3 flex justify-between items-start group">
+                        <div>
+                            <p class="font-bold text-emerald-600 dark:text-emerald-500">+ ₱${formatCurrency(pay.amount_paid)} <span class="text-xs text-gray-400 dark:text-zinc-500 font-normal">(${pay.payment_method})</span></p>
+                            <p class="text-xs text-gray-600 dark:text-zinc-300 mt-0.5">For: ${pay.project_name}</p>
+                            <p class="text-[10px] text-gray-400 dark:text-zinc-500 mt-0.5">${new Date(pay.payment_date).toLocaleDateString()}</p>
+                        </div>
+                        <button onclick="voidPayment(${pay.payment_id})" class="text-[10px] font-bold text-rose-500 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none bg-rose-50 dark:bg-rose-500/10 px-2 py-1 rounded border border-rose-200 dark:border-rose-500/20 uppercase tracking-widest mt-1">
+                            Void
+                        </button>
                     </div>`;
                 });
                 document.getElementById('det_payments').innerHTML = payHtml;
@@ -591,6 +592,29 @@ include 'includes/header.php';
             if(data.status === 'success') window.location.reload();
             else alert("Error: " + data.message);
         } catch (e) { alert("Network Error"); }
+    }
+
+    // 🚨 NEW: VOID PAYMENT LOGIC
+    async function voidPayment(paymentId) {
+        if (!paymentId) return alert("Payment ID missing.");
+        
+        // Final confirmation warning the user that this changes the balance
+        if (!confirm("Are you sure you want to VOID this payment?\n\nThis action cannot be undone and will add the amount back to the customer's balance.")) return;
+
+        try {
+            const res = await fetch('actions/void_payment.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payment_id: paymentId })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert("Payment voided successfully.");
+                window.location.reload();
+            } else {
+                alert("Error: " + data.message);
+            }
+        } catch (e) { alert("Network Error while trying to void the payment."); }
     }
 </script>
 
