@@ -144,14 +144,14 @@ include 'includes/header.php';
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     
                     <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col overflow-hidden transition-colors duration-500 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/50 group">
-                        <div class="p-5 flex items-center gap-4 flex-grow">
+                        <div class="p-5 flex items-center gap-4 flex-grow overflow-hidden">
                             <div class="h-12 w-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-500 flex items-center justify-center text-xl shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                                 <i class="fa-solid fa-peso-sign"></i>
                             </div>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Total Sales (30 Days)</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 truncate">Total Sales (30 Days)</p>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <h4 class="text-2xl font-extrabold text-gray-900 dark:text-white">₱ <?= number_format($total_sales, 2) ?></h4>
+                                    <h4 class="text-xl xl:text-2xl font-extrabold text-gray-900 dark:text-white whitespace-nowrap tracking-tight">₱ <?= number_format($total_sales, 2) ?></h4>
                                 </div>
                             </div>
                         </div>
@@ -163,14 +163,14 @@ include 'includes/header.php';
                     </div>
                     
                     <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col overflow-hidden transition-colors duration-500 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/50 group">
-                        <div class="p-5 flex items-center gap-4 flex-grow">
+                        <div class="p-5 flex items-center gap-4 flex-grow overflow-hidden">
                             <div class="h-12 w-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-500 flex items-center justify-center text-xl shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                                 <i class="fa-solid fa-shirt"></i>
                             </div>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Active Orders</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 truncate">Active Orders</p>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <h4 class="text-2xl font-extrabold text-gray-900 dark:text-white"><?= number_format($active_orders) ?></h4>
+                                    <h4 class="text-xl xl:text-2xl font-extrabold text-gray-900 dark:text-white whitespace-nowrap tracking-tight"><?= number_format($active_orders) ?></h4>
                                 </div>
                             </div>
                         </div>
@@ -182,14 +182,14 @@ include 'includes/header.php';
                     </div>
                     
                     <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col overflow-hidden transition-colors duration-500 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-900/50 group">
-                        <div class="p-5 flex items-center gap-4 flex-grow">
+                        <div class="p-5 flex items-center gap-4 flex-grow overflow-hidden">
                             <div class="h-12 w-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-500 flex items-center justify-center text-xl shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                                 <i class="fa-solid fa-hand-holding-dollar"></i>
                             </div>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Outstanding Receivables</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 truncate">Receivables</p>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <h4 class="text-2xl font-extrabold text-gray-900 dark:text-white">₱ <?= number_format($receivables, 2) ?></h4>
+                                    <h4 class="text-xl xl:text-2xl font-extrabold text-gray-900 dark:text-white whitespace-nowrap tracking-tight">₱ <?= number_format($receivables, 2) ?></h4>
                                 </div>
                             </div>
                         </div>
@@ -201,14 +201,14 @@ include 'includes/header.php';
                     </div>
                     
                     <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col overflow-hidden transition-colors duration-500 hover:shadow-md <?= $low_stock > 0 ? 'hover:border-rose-200 dark:hover:border-rose-900/50' : 'hover:border-emerald-200 dark:hover:border-emerald-900/50' ?> group">
-                        <div class="p-5 flex items-center gap-4 flex-grow">
+                        <div class="p-5 flex items-center gap-4 flex-grow overflow-hidden">
                             <div class="h-12 w-12 rounded-xl <?= $low_stock > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 group-hover:bg-rose-600' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 group-hover:bg-emerald-600' ?> flex items-center justify-center text-xl shrink-0 group-hover:text-white transition-colors">
                                 <i class="fa-solid <?= $low_stock > 0 ? 'fa-triangle-exclamation' : 'fa-check' ?>"></i>
                             </div>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Low Stock Alerts</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 truncate">Low Stock Alerts</p>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <h4 class="text-2xl font-extrabold text-gray-900 dark:text-white"><?= number_format($low_stock) ?> Items</h4>
+                                    <h4 class="text-xl xl:text-2xl font-extrabold text-gray-900 dark:text-white whitespace-nowrap tracking-tight"><?= number_format($low_stock) ?> Items</h4>
                                 </div>
                             </div>
                         </div>
