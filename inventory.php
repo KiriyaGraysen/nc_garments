@@ -12,18 +12,32 @@ if (!in_array($view, $valid_views)) {
 $is_archived_view = ($view === 'archived_raw' || $view === 'archived_premade') ? 1 : 0;
 $base_type = ($view === 'raw_material' || $view === 'archived_raw') ? 'raw_material' : 'premade_product';
 
-// 2. Fetch data based on base type and archive status
+// 2. Setup Sorting Logic
+$sort = $_GET['sort'] ?? 'name_asc';
+$name_col = ($base_type === 'raw_material') ? 'material_name' : 'product_name';
+$price_col = ($base_type === 'raw_material') ? 'current_price' : 'selling_price';
+
+switch ($sort) {
+    case 'name_desc': $order_by = "$name_col DESC"; break;
+    case 'stock_asc': $order_by = "current_stock ASC"; break;
+    case 'stock_desc': $order_by = "current_stock DESC"; break;
+    case 'price_asc': $order_by = "$price_col ASC"; break;
+    case 'price_desc': $order_by = "$price_col DESC"; break;
+    default: $order_by = "$name_col ASC"; break; // Default is name_asc
+}
+
+// 3. Fetch data based on base type, archive status, and sort order
 if ($base_type === 'raw_material') {
     $stmt = $conn->prepare("
         SELECT material_id as id, sku, material_name as name, current_stock as stock, 
                unit_of_measure as metric, current_price as price, min_stock_alert as alert
-        FROM raw_material WHERE is_archived = ? ORDER BY material_name ASC
+        FROM raw_material WHERE is_archived = ? ORDER BY $order_by
     ");
 } else {
     $stmt = $conn->prepare("
         SELECT product_id as id, sku, product_name as name, current_stock as stock, 
                size as metric, selling_price as price, min_stock_alert as alert
-        FROM premade_product WHERE is_archived = ? ORDER BY product_name ASC
+        FROM premade_product WHERE is_archived = ? ORDER BY $order_by
     ");
 }
 $stmt->bind_param("i", $is_archived_view);
@@ -47,12 +61,26 @@ include 'includes/header.php';
         <?php endif; ?>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
         
-        <div class="relative w-full md:w-96 group">
-            <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-            <input type="text" placeholder="Search by SKU or item name..." 
-                   class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm">
+        <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
+            <div class="relative w-full group">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
+                <input type="text" id="search-input" placeholder="Search SKU or item name..." 
+                       class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
+            </div>
+            
+            <div class="relative w-48 shrink-0">
+                <select onchange="window.location.href=this.value" class="w-full px-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-bold cursor-pointer appearance-none">
+                    <option value="?view=<?= $view ?>&sort=name_asc" <?= $sort == 'name_asc' ? 'selected' : '' ?>>Sort: Name (A-Z)</option>
+                    <option value="?view=<?= $view ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Sort: Name (Z-A)</option>
+                    <option value="?view=<?= $view ?>&sort=stock_asc" <?= $sort == 'stock_asc' ? 'selected' : '' ?>>Sort: Stock (Low to High)</option>
+                    <option value="?view=<?= $view ?>&sort=stock_desc" <?= $sort == 'stock_desc' ? 'selected' : '' ?>>Sort: Stock (High to Low)</option>
+                    <option value="?view=<?= $view ?>&sort=price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Sort: Price (Low to High)</option>
+                    <option value="?view=<?= $view ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Sort: Price (High to Low)</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+            </div>
         </div>
         
         <?php
@@ -60,25 +88,25 @@ include 'includes/header.php';
             $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
         ?>
         
-        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full md:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
-            <a href="?view=raw_material" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'raw_material' ? $active_tab : $inactive_tab ?>">
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+            <a href="?view=raw_material&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'raw_material' ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-layer-group text-xs"></i> Raw Materials
             </a>
-            <a href="?view=premade_product" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'premade_product' ? $active_tab : $inactive_tab ?>">
+            <a href="?view=premade_product&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'premade_product' ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-tags text-xs"></i> Premade Products
             </a>
             <span class="mx-1 border-r border-gray-300 dark:border-zinc-700"></span>
-            <a href="?view=archived_raw" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_raw' ? $active_tab : $inactive_tab ?>">
+            <a href="?view=archived_raw&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_raw' ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-box-archive text-xs"></i> Arch. Materials
             </a>
-            <a href="?view=archived_premade" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_premade' ? $active_tab : $inactive_tab ?>">
+            <a href="?view=archived_premade&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_premade' ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-box-archive text-xs"></i> Arch. Products
             </a>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
-        <div class="overflow-x-auto">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col transition-colors duration-500">
+        <div class="overflow-x-auto flex-1">
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
                     <tr>
@@ -94,16 +122,15 @@ include 'includes/header.php';
                         <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
+                <tbody id="inventory-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     
                     <?php
                     if ($items_result->num_rows === 0) {
                         $colspan = ($base_type === 'raw_material') ? 6 : 5;
-                        echo '<tr><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
                     }
 
                     while ($item = $items_result->fetch_assoc()) {
-                        
                         $stock_val = (float)$item['stock'];
                         $alert_val = (float)$item['alert'];
                         
@@ -146,8 +173,9 @@ include 'includes/header.php';
                             }
                         }
                         
+                        // Added 'inventory-row' class for JS targeting
                         echo '
-                        <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_bg . '">
+                        <tr class="inventory-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_bg . '">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors">'.htmlspecialchars($item['name']).'</div>
                                 <div class="text-xs font-bold tracking-wider text-gray-400 mt-1">SKU: '.htmlspecialchars($item['sku']).'</div>
@@ -160,7 +188,6 @@ include 'includes/header.php';
                                 <div class="text-[10px] font-bold '.$alert_color.' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
                             </td>';
                             
-                            // ONLY SHOW BACKORDERED COLUMN FOR RAW MATERIALS
                             if ($base_type === 'raw_material') {
                                 echo '<td class="px-6 py-4">';
                                 if ($deficit > 0 && !$is_archived_view) {
@@ -221,6 +248,8 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
 </main>
 
@@ -305,6 +334,121 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // --- Pagination & Search Logic ---
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('inventory-tbody');
+    const allRows = Array.from(tbody.querySelectorAll('tr.inventory-row'));
+    const paginationContainer = document.getElementById('pagination-container');
+    const baseType = '<?= $base_type ?>';
+    const colspanCount = baseType === 'raw_material' ? 6 : 5;
+    
+    let currentPage = 1;
+    const rowsPerPage = 15;
+
+    function updateTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        // Filter rows based on search term
+        const filteredRows = allRows.filter(row => {
+            const text = row.innerText.toLowerCase();
+            return text.includes(searchTerm);
+        });
+
+        // Calculate pagination based on filtered results
+        const totalItems = filteredRows.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+        
+        if (currentPage > totalPages) currentPage = 1;
+
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+
+        // Hide all rows initially
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show only the 15 rows for the current page
+        filteredRows.slice(startIndex, endIndex).forEach(row => {
+            row.style.display = '';
+        });
+
+        // Handle Empty States
+        const existingEmptyRow = document.getElementById('js-empty-state');
+        if (totalItems === 0) {
+            if (!existingEmptyRow) {
+                tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No items found matching your search.</td></tr>`);
+            } else {
+                existingEmptyRow.style.display = '';
+            }
+        } else {
+            if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+        }
+
+        // Hide PHP's default empty state if we are doing JS rendering
+        const phpEmpty = document.getElementById('php-empty-state');
+        if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+
+        renderPagination(totalItems, totalPages);
+    }
+
+    function renderPagination(totalItems, totalPages) {
+        if (totalItems === 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                    Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="changePage(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+        `;
+
+        // Generate Page Numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (totalPages > 7) {
+                 if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                     html += makePageBtn(i);
+                 } else if (i === currentPage - 2 || i === currentPage + 2) {
+                     html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                 }
+            } else {
+                 html += makePageBtn(i);
+            }
+        }
+
+        html += `
+                    <button onclick="changePage(${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>
+            </div>
+        `;
+        paginationContainer.innerHTML = html;
+    }
+
+    function makePageBtn(i) {
+        const activeClass = i === currentPage 
+            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+        return `<button onclick="changePage(${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        updateTable();
+    }
+
+    // Trigger instantly as the user types
+    searchInput.addEventListener('input', () => {
+        currentPage = 1; 
+        updateTable();
+    });
+
+    // Run once on initial load
+    updateTable();
+
+
+    // --- Modal Logic ---
     function toggleItemTypeFields() {
         const type = document.querySelector('input[name="inv_type"]:checked').value;
         if (type === 'raw_material') {

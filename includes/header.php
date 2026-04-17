@@ -75,7 +75,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         @custom-variant dark (&:where(.dark, .dark *));
     </style>
 
-    <style>
+<style>
         /* 1. HIDE NUMBER INPUT SPINNERS GLOBALLY */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -90,6 +90,52 @@ $current_page = basename($_SERVER['PHP_SELF']);
         .dark input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1) brightness(100%);
             cursor: pointer;
+        }
+
+        /* ==========================================
+           3. CUSTOM NC GARMENTS SCROLLBAR
+           ========================================== */
+        
+        /* Firefox Support */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent; /* gray-300 */
+        }
+        .dark * {
+            scrollbar-color: #3f3f46 transparent; /* zinc-700 */
+        }
+
+        /* WebKit (Chrome, Edge, Safari) Support */
+        ::-webkit-scrollbar {
+            width: 8px;  /* Vertical scrollbar width */
+            height: 8px; /* Horizontal scrollbar height */
+        }
+
+        /* The track (background) */
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+
+        /* The draggable thumb */
+        ::-webkit-scrollbar-thumb {
+            background-color: #d1d5db; /* Tailwind gray-300 */
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        /* Thumb hover state (Brand Pink!) */
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #db2777; /* Tailwind pink-600 */
+        }
+
+        /* Dark Mode overrides for the thumb */
+        .dark ::-webkit-scrollbar-thumb {
+            background-color: #3f3f46; /* Tailwind zinc-700 */
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background-color: #db2777; /* Tailwind pink-600 */
         }
     </style>
 
