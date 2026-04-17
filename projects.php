@@ -191,7 +191,6 @@ include 'includes/header.php';
                         $pct_color = ($project['progress'] === 'cancelled') ? 'text-rose-500' : 'text-pink-600';
                         $disabled_select = $view_archived ? 'disabled' : '';
 
-                        // 🚨 FILTER DROPDOWN FOR INTERNAL RESTOCK
                         $current_project_options = $progress_options;
                         if ($is_internal_js === 'true') {
                             $current_project_options = array_values(array_diff($progress_options, ['packing', 'released']));
@@ -640,9 +639,147 @@ include 'includes/header.php';
         </div>
     </div>
 
+    <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="global-confirm-backdrop"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-confirm-box">
+            <div class="p-6 text-center">
+                <div id="global-confirm-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border">
+                    <i id="global-confirm-icon" class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="global-confirm-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Are you sure?</h3>
+                <p id="global-confirm-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center gap-3">
+                <button id="global-confirm-cancel" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">Cancel</button>
+                <button id="global-confirm-ok" class="text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-alert-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+            <div class="p-6 text-center">
+                <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-pink-200 dark:border-pink-500/30">
+                    <i id="global-alert-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Notice</h3>
+                <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+                <button onclick="closeGlobalAlert()" class="bg-pink-600 hover:bg-pink-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 focus:outline-none transition-all w-full">Got it</button>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <script>
+    // ==========================================
+    // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
+    // ==========================================
+    
+    function customAlert(message, title = "Notice", type = "info") {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        const msgEl = document.getElementById('global-alert-msg');
+        const titleEl = document.getElementById('global-alert-title');
+        const iconWrapper = document.getElementById('global-alert-icon-wrapper');
+        const icon = document.getElementById('global-alert-icon');
+
+        msgEl.textContent = message;
+        titleEl.textContent = title;
+
+        // Theme the alert based on type
+        iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+        if (type === "error") {
+            iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+            icon.className = "fa-solid fa-circle-xmark";
+        } else if (type === "success") {
+            iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+            icon.className = "fa-solid fa-circle-check";
+        } else {
+            iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
+            icon.className = "fa-solid fa-circle-info";
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeGlobalAlert() {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        box.classList.remove('scale-100', 'opacity-100');
+        box.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    // A Promise-based confirm dialog so we can `await customConfirm(...)` just like native confirm()
+    function customConfirm(message, title = "Are you sure?", confirmBtnText = "Confirm", type = "warning") {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('global-confirm-modal');
+            const box = document.getElementById('global-confirm-box');
+            const msgEl = document.getElementById('global-confirm-msg');
+            const titleEl = document.getElementById('global-confirm-title');
+            const btnOk = document.getElementById('global-confirm-ok');
+            const btnCancel = document.getElementById('global-confirm-cancel');
+            const backdrop = document.getElementById('global-confirm-backdrop');
+            const iconWrapper = document.getElementById('global-confirm-icon-wrapper');
+            const icon = document.getElementById('global-confirm-icon');
+
+            msgEl.textContent = message;
+            titleEl.textContent = title;
+            btnOk.textContent = confirmBtnText;
+
+            // Theme the confirm dialog
+            iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+            btnOk.className = "text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 ";
+            
+            if (type === "danger") {
+                iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+                icon.className = "fa-solid fa-trash";
+                btnOk.className += "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20";
+            } else {
+                iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const cleanupAndResolve = (result) => {
+                box.classList.remove('scale-100', 'opacity-100');
+                box.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+                
+                // Remove listeners so they don't stack up
+                btnOk.removeEventListener('click', onOk);
+                btnCancel.removeEventListener('click', onCancel);
+                backdrop.removeEventListener('click', onCancel);
+                
+                resolve(result);
+            };
+
+            const onOk = () => cleanupAndResolve(true);
+            const onCancel = () => cleanupAndResolve(false);
+
+            btnOk.addEventListener('click', onOk);
+            btnCancel.addEventListener('click', onCancel);
+            backdrop.addEventListener('click', onCancel);
+        });
+    }
+
+    // Overwrite the native functions entirely!
+    window.alert = customAlert;
+
     // --- Pagination & Search Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('project-tbody');
@@ -915,17 +1052,18 @@ include 'includes/header.php';
                         isNewProjectFlow = true; 
                         openCostingModal(result.project_id, result.project_name, calculatedPrice, isInternal);
                     } else {
-                        window.location.reload();
+                        customAlert("Project created successfully!", "Success", "success");
+                        setTimeout(() => window.location.reload(), 1500);
                     }
                 } else {
-                    alert('Database Logic Error: ' + result.message);
+                    customAlert('Database Logic Error: ' + result.message, "Error", "error");
                 }
             } catch (jsonError) {
                 console.error("Raw Server Response:", rawText);
-                alert("PHP Error in save_project.php:\n\n" + rawText.substring(0, 500));
+                customAlert("PHP Error in save_project.php:\n\n" + rawText.substring(0, 500), "Server Error", "error");
             }
         } catch (error) { 
-            alert('True Network Fetch Error: ' + error.message); 
+            customAlert('True Network Fetch Error: ' + error.message, "Network Error", "error"); 
         }
     }
 
@@ -1069,7 +1207,7 @@ include 'includes/header.php';
             }
         });
 
-        if (materialsData.length === 0 && agreedPrice == 0) return alert("Please add at least one material or set a valid Agreed Price.");
+        if (materialsData.length === 0 && agreedPrice == 0) return customAlert("Please add at least one material or set a valid Agreed Price.", "Missing Data", "error");
 
         const saveBtn = document.querySelector('button[onclick="saveCosting()"]');
         const originalBtnHtml = saveBtn.innerHTML;
@@ -1078,72 +1216,82 @@ include 'includes/header.php';
             saveBtn.disabled = true;
             const response = await fetch('actions/save_costing.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, agreed_price: agreedPrice, materials: materialsData }) });
             const result = JSON.parse(await response.text());
-            if (result.status === 'success') { closeCostingModal(); window.location.reload(); }
-            else { alert('Error:\n' + result.message); saveBtn.innerHTML = originalBtnHtml; saveBtn.disabled = false; }
-        } catch (error) { alert('Network Error'); saveBtn.innerHTML = originalBtnHtml; saveBtn.disabled = false; }
+            if (result.status === 'success') { 
+                closeCostingModal(); 
+                customAlert("Costing breakdown saved successfully.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500); 
+            }
+            else { 
+                customAlert('Error:\n' + result.message, "Save Failed", "error"); 
+                saveBtn.innerHTML = originalBtnHtml; 
+                saveBtn.disabled = false; 
+            }
+        } catch (error) { 
+            customAlert('Network Error', "Error", "error"); 
+            saveBtn.innerHTML = originalBtnHtml; 
+            saveBtn.disabled = false; 
+        }
     }
 
     async function deleteCostingBreakdown() {
-        if (!confirm("Are you sure you want to delete this entire costing breakdown? This cannot be undone.")) return;
+        const isConfirmed = await customConfirm("Are you sure you want to delete this entire costing breakdown? This cannot be undone.", "Delete Breakdown", "Yes, delete it", "danger");
+        if (!isConfirmed) return;
+        
         try {
             const response = await fetch('actions/delete_costing.php', { method: 'POST', body: JSON.stringify({ project_id: document.getElementById('modal-project-id').value }), headers: { 'Content-Type': 'application/json' } });
             const result = await response.json();
-            if(result.status === 'success') window.location.reload();
-            else alert("Error deleting breakdown.");
-        } catch (error) { alert("Network error while deleting."); }
+            if(result.status === 'success') {
+                customAlert("Costing breakdown deleted.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            }
+            else customAlert("Error deleting breakdown.", "Error", "error");
+        } catch (error) { customAlert("Network error while deleting.", "Error", "error"); }
     }
 
     // ==========================================
     // 3. PROGRESS, NOTES, ARCHIVE & DETAILS
     // ==========================================
     
-    // 🚨 UPDATED LOGIC: Intercepting Dropdown changes for Smart Inventory Routing
     async function updateProgress(projectId, newProgress, oldProgress) {
         
-        // INTERCEPT 1: Deduct Stock (if moving to sampling/cutting from not started)
         if ((newProgress === 'sampling' || newProgress === 'cutting') && oldProgress === 'not started') {
-            let confirmStart = confirm(`You are moving the project to '${newProgress}'.\n\nDo you want to officially start this project and deduct the materials from the warehouse inventory?`);
-            if (confirmStart) {
+            const isConfirmed = await customConfirm(`You are moving the project to '${newProgress}'.\n\nDo you want to officially start this project and deduct the materials from the warehouse inventory?`, "Start Production");
+            if (isConfirmed) {
                 startProjectProduction(projectId, false, newProgress);
             } else {
-                window.location.reload(); // reset the dropdown if they cancel
+                window.location.reload(); 
             }
-            return; // stop normal execution
+            return; 
         }
 
-        // INTERCEPT 2: Refund Stock (if rolling back to not started)
         if (newProgress === 'not started' && oldProgress !== 'not started') {
-            let confirmRefund = confirm("⚠️ You are rolling this project back to 'Not Started'.\n\nDo you want to REFUND the deducted raw materials back into the warehouse inventory?");
-            if (confirmRefund) {
+            const isConfirmed = await customConfirm("⚠️ You are rolling this project back to 'Not Started'.\n\nDo you want to REFUND the deducted raw materials back into the warehouse inventory?", "Rollback Project");
+            if (isConfirmed) {
                 refundProjectMaterials(projectId);
-                return; // stop normal execution
+                return; 
             }
-            // If they hit cancel, we still let it do a normal text update below
         }
 
-        // NORMAL EXECUTION
         try {
             const res = await fetch('actions/update_progress.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, progress: newProgress }) });
             const data = await res.json();
             
-            // 🚨 NEW LOGIC: Handle Internal Restock Modal Triggers
             if (data.status === 'success') {
                 if (data.stock_action === 'added') {
                     document.getElementById('internal_stock_msg').textContent = data.stock_message;
                     document.getElementById('internal-stock-modal').classList.remove('hidden');
                 } else if (data.stock_action === 'deducted') {
-                    alert(data.stock_message);
-                    window.location.reload();
+                    customAlert(data.stock_message, "Inventory Adjusted", "info");
+                    setTimeout(() => window.location.reload(), 2500);
                 } else {
                     window.location.reload();
                 }
             } else {
-                alert("Error updating progress");
+                customAlert("Error updating progress", "Error", "error");
             }
-        } catch(e) { alert("Network Error"); }
+        } catch(e) { customAlert("Network Error", "Error", "error"); }
     }
 
-    // 🚨 NEW FUNCTION: Close Modal and Reload
     function closeInternalStockModal() {
         document.getElementById('internal-stock-modal').classList.add('hidden');
         window.location.reload();
@@ -1159,24 +1307,29 @@ include 'includes/header.php';
     async function saveNotes() {
         try {
             const res = await fetch('actions/update_progress.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: document.getElementById('note_project_id').value, overdue_notes: document.getElementById('note_text').value }) });
-            if ((await res.json()).status === 'success') window.location.reload();
-        } catch(e) { alert("Network Error"); }
+            if ((await res.json()).status === 'success') {
+                closeNotesModal();
+                window.location.reload();
+            }
+        } catch(e) { customAlert("Network Error", "Error", "error"); }
     }
 
     async function archiveProject(projectId) {
-        if (!confirm("Archive this project? It will be moved to the Archived tab.")) return;
+        const isConfirmed = await customConfirm("Archive this project? It will be moved to the Archived tab.", "Archive Project");
+        if (!isConfirmed) return;
         try {
             const res = await fetch('actions/delete_project.php', { method: 'POST', body: JSON.stringify({ project_id: projectId }), headers: { 'Content-Type': 'application/json' } });
             if((await res.json()).status === 'success') window.location.reload();
-        } catch (e) { alert("Network error."); }
+        } catch (e) { customAlert("Network error.", "Error", "error"); }
     }
 
     async function restoreProject(projectId) {
-        if (!confirm("Restore this project back to the active list?")) return;
+        const isConfirmed = await customConfirm("Restore this project back to the active list?", "Restore Project", "Yes, Restore", "info");
+        if (!isConfirmed) return;
         try {
             const res = await fetch('actions/restore_project.php', { method: 'POST', body: JSON.stringify({ project_id: projectId }), headers: { 'Content-Type': 'application/json' } });
             if((await res.json()).status === 'success') window.location.reload();
-        } catch (e) { alert("Network error."); }
+        } catch (e) { customAlert("Network error.", "Error", "error"); }
     }
 
     function toggleEditSizingModule() {
@@ -1297,7 +1450,7 @@ include 'includes/header.php';
                     toggleEditSizingModule();
                 }
             }
-        } catch (e) { alert("Error loading details."); }
+        } catch (e) { customAlert("Error loading details.", "Error", "error"); }
     }
 
     function switchEditSizingType() {
@@ -1383,21 +1536,22 @@ include 'includes/header.php';
             try {
                 const result = JSON.parse(rawText);
                 if (result.status === 'success') {
-                    window.location.reload();
+                    customAlert("Project Details Updated", "Success", "success");
+                    setTimeout(() => window.location.reload(), 1500);
                 } else {
-                    alert("Database Logic Error: " + result.message); 
+                    customAlert("Database Logic Error: " + result.message, "Error", "error"); 
                     btn.disabled = false; 
                     btn.innerHTML = "Update Project Details";
                 }
             } catch (jsonError) {
                 console.error("Raw Server Response:", rawText);
-                alert("PHP Error in update_project.php:\n\n" + rawText.substring(0, 500));
+                customAlert("PHP Error in update_project.php:\n\n" + rawText.substring(0, 500), "Server Error", "error");
                 btn.disabled = false; 
                 btn.innerHTML = "Update Project Details";
             }
             
         } catch (error) { 
-            alert("True Network Fetch Error: " + error.message); 
+            customAlert("True Network Fetch Error: " + error.message, "Network Error", "error"); 
             btn.disabled = false; 
             btn.innerHTML = "Update Project Details"; 
         }
@@ -1418,29 +1572,32 @@ include 'includes/header.php';
 
             if (data.status === 'warning') {
                 let missingList = data.shortages.join("\n- ");
-                let confirmForce = confirm(
+                const isConfirmed = await customConfirm(
                     "⚠️ INSUFFICIENT MATERIALS ⚠️\n\n" +
                     "You do not have enough raw materials in the warehouse to complete this project. " +
                     "Proceeding will push your inventory into a negative deficit (Backorder).\n\n" +
                     "Missing Items:\n- " + missingList + "\n\n" +
-                    "Do you want to force-start production anyway?"
+                    "Do you want to force-start production anyway?",
+                    "Warning: Low Stock",
+                    "Force Start",
+                    "danger"
                 );
 
-                if (confirmForce) {
+                if (isConfirmed) {
                     startProjectProduction(projectId, true, targetPhase);
                 } else {
                     window.location.reload(); 
                 }
                 
             } else if (data.status === 'success') {
-                alert(data.message);
-                window.location.reload(); 
+                customAlert(data.message, "Success", "success");
+                setTimeout(() => window.location.reload(), 2000); 
             } else {
-                alert("Error: " + data.message);
+                customAlert("Error: " + data.message, "Error", "error");
             }
             
         } catch (error) {
-            alert("A network error occurred while trying to start production.");
+            customAlert("A network error occurred while trying to start production.", "Network Error", "error");
         }
     }
 
@@ -1454,14 +1611,14 @@ include 'includes/header.php';
             const data = await response.json();
             
             if (data.status === 'success') {
-                alert(data.message);
-                window.location.reload();
+                customAlert(data.message, "Refund Successful", "success");
+                setTimeout(() => window.location.reload(), 2000);
             } else {
-                alert("Error refunding: " + data.message);
-                window.location.reload(); 
+                customAlert("Error refunding: " + data.message, "Refund Failed", "error");
+                setTimeout(() => window.location.reload(), 2500); 
             }
         } catch (e) {
-            alert("A network error occurred while trying to refund materials.");
+            customAlert("A network error occurred while trying to refund materials.", "Network Error", "error");
         }
     }
 </script>
