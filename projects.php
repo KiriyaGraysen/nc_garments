@@ -174,7 +174,7 @@ include 'includes/header.php';
                                             <div class="'.$bar_color.' h-1.5 rounded-full transition-all duration-500" style="width: ' . $pct . '%"></div>
                                         </div>
                                     </div>
-                                    <select onchange="updateProgress(' . $project['project_id'] . ', this.value)" '.$disabled_select.' class="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-pink-500 transition-all uppercase tracking-wider cursor-pointer shadow-sm disabled:opacity-50">
+                                    <select onchange="updateProgress(' . $project['project_id'] . ', this.value, \'' . $project['progress'] . '\')" '.$disabled_select.' class="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-pink-500 transition-all uppercase tracking-wider cursor-pointer shadow-sm disabled:opacity-50">
                                         ';
                                         foreach ($progress_options as $opt) {
                                             $selected = ($project['progress'] === $opt) ? 'selected' : '';
@@ -248,22 +248,15 @@ include 'includes/header.php';
     
     <div id="create-project-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCreateProjectModal()"></div>
-        
         <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
-            
             <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Create New Project</h3>
-                <button onclick="closeCreateProjectModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+                <button onclick="closeCreateProjectModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            
             <div class="p-6 overflow-y-auto flex-1 bg-gray-50/30 dark:bg-zinc-950/30">
                 <form id="create-project-form">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
-                        
                         <div class="lg:col-span-7 flex flex-col gap-5">
-                            
                             <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
                                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Project Information</h4>
                                 <div class="grid grid-cols-2 gap-4">
@@ -277,7 +270,6 @@ include 'includes/header.php';
                                     </div>
                                 </div>
                             </div>
-
                             <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
                                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Production Workflow</h4>
                                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -285,22 +277,17 @@ include 'includes/header.php';
                                         <input type="radio" name="workflow_type" value="customer" class="sr-only" checked onchange="toggleWorkflow()">
                                         <div class="flex items-center gap-3">
                                             <div class="text-pink-600 dark:text-pink-500 text-lg"><i class="fa-solid fa-users"></i></div>
-                                            <div>
-                                                <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Order</p>
-                                            </div>
+                                            <div><p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Order</p></div>
                                         </div>
                                     </label>
                                     <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 p-3 shadow-sm focus:outline-none has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:has-[:checked]:bg-amber-900/10 transition-all">
                                         <input type="radio" name="workflow_type" value="internal" class="sr-only" onchange="toggleWorkflow()">
                                         <div class="flex items-center gap-3">
                                             <div class="text-amber-500 text-lg"><i class="fa-solid fa-boxes-stacked"></i></div>
-                                            <div>
-                                                <p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Stock</p>
-                                            </div>
+                                            <div><p class="text-sm font-bold text-gray-900 dark:text-white">Make-to-Stock</p></div>
                                         </div>
                                     </label>
                                 </div>
-
                                 <div id="section-customer" class="space-y-4">
                                     <div class="flex justify-between items-center mb-1">
                                         <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Select Client</label>
@@ -309,7 +296,6 @@ include 'includes/header.php';
                                             <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Insert New Client</span>
                                         </label>
                                     </div>
-                                    
                                     <div id="existing-customer-div">
                                         <select id="cp_existing_customer" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-sm">
                                             <option value="">-- Choose Existing Client --</option>
@@ -318,7 +304,6 @@ include 'includes/header.php';
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-
                                     <div id="new-customer-div" class="hidden space-y-3">
                                         <input type="text" id="cp_new_cust_name" placeholder="Full Name / Organization" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none text-sm shadow-sm">
                                         <div class="grid grid-cols-2 gap-3">
@@ -327,7 +312,6 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="section-internal" class="hidden space-y-2">
                                     <label class="block text-[10px] font-extrabold text-amber-600 dark:text-amber-500 uppercase tracking-widest">Target Product (Finished Goods)</label>
                                     <select id="cp_target_product" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-amber-200 dark:border-amber-800/50 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all text-sm font-medium shadow-sm">
@@ -338,27 +322,21 @@ include 'includes/header.php';
                                     </select>
                                 </div>
                             </div>
-
                         </div>
-
                         <div class="lg:col-span-5 relative min-h-[400px] lg:min-h-0">
                             <div class="lg:absolute inset-0 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col h-full">
-                                
                                 <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
                                     <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Quantity & Sizing</h4>
                                     <label class="flex items-center gap-2 cursor-pointer" id="create_sizing_toggle_label">
                                         <input type="checkbox" id="enable-sizing-toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleSizingModule()">
                                         <span class="text-xs font-bold text-pink-600 dark:text-pink-500">Specify Sizes / Measurements</span>
                                     </label>
-
                                 </div>
-
                                 <div class="flex-none mb-4 relative">
                                     <label class="block text-[10px] font-extrabold text-gray-500 uppercase tracking-widest mb-1">Total Quantity</label>
                                     <input type="number" id="cp_total_quantity" min="1" value="1" class="w-1/2 px-4 py-2.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-bold shadow-sm">
                                     <p id="qty-warning" class="hidden text-[9px] font-semibold text-amber-500 mt-1 leading-tight absolute left-0 -bottom-4">Auto-calculated from sizes.</p>
                                 </div>
-
                                 <div id="sizing-area" class="hidden flex-1 overflow-hidden flex flex-col border-t border-gray-100 dark:border-zinc-800 pt-3 min-h-0">
                                     <div class="flex gap-4 mb-3 flex-none">
                                         <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
@@ -368,7 +346,6 @@ include 'includes/header.php';
                                             <input type="radio" name="sizing_type" value="custom" onchange="switchSizingType()" class="text-pink-600 focus:ring-pink-500"> Custom
                                         </label>
                                     </div>
-                                    
                                     <div class="flex-1 overflow-y-auto pr-1 min-h-0">
                                         <div id="standard-sizing-wrapper" class="space-y-2">
                                             <table class="w-full text-left relative">
@@ -385,7 +362,6 @@ include 'includes/header.php';
                                                 <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
                                             </button>
                                         </div>
-
                                         <div id="custom-sizing-wrapper" class="hidden space-y-2">
                                             <table class="w-full text-left relative">
                                                 <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
@@ -406,11 +382,9 @@ include 'includes/header.php';
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </form>
             </div>
-
             <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3 mt-auto">
                 <button type="button" onclick="closeCreateProjectModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
                 <button type="button" onclick="submitNewProject(false)" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-5 py-2.5 rounded-xl transition-all text-sm font-bold shadow-sm focus:outline-none">Save Only</button>
@@ -429,7 +403,6 @@ include 'includes/header.php';
                 </div>
                 <button onclick="closeCostingModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-
             <div class="p-6 overflow-y-auto flex-1">
                 <form id="costing-form">
                     <input type="hidden" id="modal-project-id" name="project_id">
@@ -446,20 +419,17 @@ include 'includes/header.php';
                         </thead>
                         <tbody id="costing-tbody" class="text-sm"></tbody>
                     </table>
-
                     <button type="button" onclick="addCostingRow()" class="mt-4 text-xs font-bold text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 flex items-center gap-1.5 transition-colors focus:outline-none cursor-pointer">
                         <i class="fa-solid fa-plus bg-pink-100 dark:bg-pink-900/30 p-1 rounded"></i> Add Material
                     </button>
                 </form>
             </div>
-
             <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-between items-center">
                 <div class="flex gap-8 items-center">
                     <div class="flex flex-col">
                         <span class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Total Material Cost</span>
                         <span id="grand-total-display" class="text-xl font-extrabold text-gray-900 dark:text-white">₱ 0.00</span>
                     </div>
-                    
                     <div class="flex flex-col relative">
                         <span id="costing-price-label" class="text-[10px] font-extrabold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Agreed Price (Charge)</span>
                         <div class="relative mt-0.5">
@@ -467,13 +437,11 @@ include 'includes/header.php';
                             <input type="number" id="modal-agreed-price" step="0.01" value="0.00" class="w-32 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white text-lg font-extrabold rounded-lg pl-7 pr-3 py-1 outline-none focus:border-pink-500 shadow-sm" oninput="calculateProfitUI()">
                         </div>
                     </div>
-            
                     <div class="flex flex-col border-l border-gray-200 dark:border-zinc-700 pl-8">
                         <span class="text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Est. Profit</span>
                         <span id="est-profit-display" class="text-xl font-extrabold text-gray-400">₱ 0.00</span>
                     </div>
                 </div>
-                
                 <div class="flex gap-2">
                     <button type="button" id="btn-delete-costing" onclick="deleteCostingBreakdown()" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-600 px-4 py-2.5 rounded-xl text-sm font-bold transition-all focus:outline-none"><i class="fa-solid fa-eraser"></i> Clear Breakdown</button>
                     <button type="button" onclick="saveCosting()" class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 cursor-pointer focus:outline-none"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Save All</button>
@@ -503,7 +471,6 @@ include 'includes/header.php';
 
     <div id="view-details-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeViewDetailsModal()"></div>
-        
         <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
             <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                 <div>
@@ -514,19 +481,14 @@ include 'includes/header.php';
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-
             <div class="p-6 overflow-y-auto flex-1 bg-gray-50/30 dark:bg-zinc-950/30">
                 <input type="hidden" id="edit_project_id">
-                
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
-                    
                     <div class="lg:col-span-7 flex flex-col gap-5">
-                        
                         <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
                             <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Client / Target</h4>
                             <div id="vd_client_info" class="text-sm text-gray-800 dark:text-zinc-200 font-medium"></div>
                         </div>
-
                         <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
                             <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Project Configuration</h4>
                             <div>
@@ -546,11 +508,8 @@ include 'includes/header.php';
                             </div>
                         </div>
                     </div>
-
                     <div class="lg:col-span-5 flex flex-col gap-5 min-h-[400px] lg:min-h-0">
-                        
                         <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col flex-1 min-h-0">
-                            
                             <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
                                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Sizing & Measurements</h4>
                                 <label class="flex items-center gap-2 cursor-pointer" id="edit_sizing_toggle_label">
@@ -558,7 +517,6 @@ include 'includes/header.php';
                                     <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Enable Sizing</span>
                                 </label>
                             </div>
-                            
                             <div id="edit_sizing_area" class="hidden flex-1 overflow-hidden flex flex-col min-h-0">
                                 <div class="flex gap-4 mb-4 flex-none">
                                     <label class="flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-700 dark:text-zinc-300">
@@ -568,7 +526,6 @@ include 'includes/header.php';
                                         <input type="radio" name="edit_sizing_type" value="custom" onchange="switchEditSizingType()" class="text-pink-600 focus:ring-pink-500"> Custom
                                     </label>
                                 </div>
-                                
                                 <div class="flex-1 overflow-y-auto pr-1 min-h-0">
                                     <div id="edit_standard_wrapper" class="space-y-2">
                                         <table class="w-full text-left relative">
@@ -585,7 +542,6 @@ include 'includes/header.php';
                                             <i class="fa-solid fa-plus bg-pink-100 p-1 rounded"></i> Add Size
                                         </button>
                                     </div>
-
                                     <div id="edit_custom_wrapper" class="hidden space-y-2">
                                         <table class="w-full text-left relative">
                                             <thead class="sticky top-0 bg-white dark:bg-zinc-900 z-10 shadow-sm">
@@ -605,22 +561,19 @@ include 'includes/header.php';
                                 </div>
                             </div>
                         </div>
-
                         <div id="vd_shortages_section" class="hidden bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-200 dark:border-rose-800/50 shadow-sm shrink-0">
                             <h4 class="text-[11px] font-extrabold text-rose-600 dark:text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 border-b border-rose-200/50 dark:border-rose-800/50 pb-2">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Insufficient Materials
                             </h4>
                             <div id="vd_shortages_list" class="space-y-2 mt-2 max-h-48 overflow-y-auto pr-1">
-                                </div>
+                            </div>
                         </div>
-
                     </div>
                 </div>
             </div>
-            
             <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-between items-center mt-auto">
                 <div id="vd_action_start_production">
-                    </div>
+                </div>
                 <div class="flex gap-3">
                     <button onclick="closeViewDetailsModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
                     <button onclick="saveProjectUpdates()" id="btn-update-project" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md focus:outline-none">Update Project Details</button>
@@ -628,12 +581,9 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
-
-
 </main>
 
 <script>
-    // Tracks if we are in the middle of creating a brand new project
     let isNewProjectFlow = false; 
 
     // ==========================================
@@ -797,10 +747,7 @@ include 'includes/header.php';
                     if (proceedToCosting) {
                         const isInternal = (workflowType === 'internal');
                         const calculatedPrice = result.agreed_price ? result.agreed_price : 0;
-                        
-                        // Tell the system we are in the "New Project" flow
                         isNewProjectFlow = true; 
-                        
                         openCostingModal(result.project_id, result.project_name, calculatedPrice, isInternal);
                     } else {
                         window.location.reload();
@@ -812,7 +759,6 @@ include 'includes/header.php';
                 console.error("Raw Server Response:", rawText);
                 alert("PHP Error in save_project.php:\n\n" + rawText.substring(0, 500));
             }
-            
         } catch (error) { 
             alert('True Network Fetch Error: ' + error.message); 
         }
@@ -902,8 +848,6 @@ include 'includes/header.php';
 
     function closeCostingModal() { 
         document.getElementById('costing-modal').classList.add('hidden'); 
-        
-        // If we just created a new project and hit 'X' on costing, reload the table!
         if (isNewProjectFlow) {
             window.location.reload();
         }
@@ -1000,7 +944,32 @@ include 'includes/header.php';
     // ==========================================
     // 3. PROGRESS, NOTES, ARCHIVE & DETAILS
     // ==========================================
-    async function updateProgress(projectId, newProgress) {
+    
+    // 🚨 UPDATED LOGIC: Intercepting Dropdown changes for Smart Inventory Routing
+    async function updateProgress(projectId, newProgress, oldProgress) {
+        
+        // INTERCEPT 1: Deduct Stock (if moving to sampling/cutting from not started)
+        if ((newProgress === 'sampling' || newProgress === 'cutting') && oldProgress === 'not started') {
+            let confirmStart = confirm(`You are moving the project to '${newProgress}'.\n\nDo you want to officially start this project and deduct the materials from the warehouse inventory?`);
+            if (confirmStart) {
+                startProjectProduction(projectId, false, newProgress);
+            } else {
+                window.location.reload(); // reset the dropdown if they cancel
+            }
+            return; // stop normal execution
+        }
+
+        // INTERCEPT 2: Refund Stock (if rolling back to not started)
+        if (newProgress === 'not started' && oldProgress !== 'not started') {
+            let confirmRefund = confirm("⚠️ You are rolling this project back to 'Not Started'.\n\nDo you want to REFUND the deducted raw materials back into the warehouse inventory?");
+            if (confirmRefund) {
+                refundProjectMaterials(projectId);
+                return; // stop normal execution
+            }
+            // If they hit cancel, we still let it do a normal text update below
+        }
+
+        // NORMAL EXECUTION
         try {
             const res = await fetch('actions/update_progress.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, progress: newProgress }) });
             const data = await res.json();
@@ -1079,7 +1048,6 @@ include 'includes/header.php';
                 document.getElementById('edit_quantity').value = p.quantity;
                 document.getElementById('edit_due_date').value = p.due_date || '';
                 
-                // 🚨 Render Material Shortages
                 const shortagesSection = document.getElementById('vd_shortages_section');
                 const shortagesList = document.getElementById('vd_shortages_list');
 
@@ -1106,7 +1074,6 @@ include 'includes/header.php';
                     shortagesList.innerHTML = '';
                 }
                 
-                // 🟢 Inject the Smart Start Button
                 const startBtnContainer = document.getElementById('vd_action_start_production');
                 if (p.progress === 'not started') {
                     startBtnContainer.innerHTML = `
@@ -1268,18 +1235,18 @@ include 'includes/header.php';
     // ==========================================
     // 4. SMART START PRODUCTION LOGIC (Deficits)
     // ==========================================
-    async function startProjectProduction(projectId, forceStart = false) {
+    // 🚨 UPDATED LOGIC: Added 'targetPhase' argument to dynamically route to Sampling OR Cutting
+    async function startProjectProduction(projectId, forceStart = false, targetPhase = 'cutting') {
         try {
             const response = await fetch('actions/start_production.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_id: projectId, force_start: forceStart })
+                body: JSON.stringify({ project_id: projectId, force_start: forceStart, target_phase: targetPhase })
             });
             
             const data = await response.json();
 
             if (data.status === 'warning') {
-                // We don't have enough materials! Prompt the user to force backorder.
                 let missingList = data.shortages.join("\n- ");
                 let confirmForce = confirm(
                     "⚠️ INSUFFICIENT MATERIALS ⚠️\n\n" +
@@ -1290,7 +1257,9 @@ include 'includes/header.php';
                 );
 
                 if (confirmForce) {
-                    startProjectProduction(projectId, true); // Run again, but force it!
+                    startProjectProduction(projectId, true, targetPhase);
+                } else {
+                    window.location.reload(); // reset the dropdown if they cancel
                 }
                 
             } else if (data.status === 'success') {
@@ -1302,6 +1271,28 @@ include 'includes/header.php';
             
         } catch (error) {
             alert("A network error occurred while trying to start production.");
+        }
+    }
+
+    // 🚨 NEW LOGIC: Refunding materials
+    async function refundProjectMaterials(projectId) {
+        try {
+            const response = await fetch('actions/refund_materials.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_id: projectId })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert("Error refunding: " + data.message);
+                window.location.reload(); 
+            }
+        } catch (e) {
+            alert("A network error occurred while trying to refund materials.");
         }
     }
 </script>

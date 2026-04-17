@@ -16,8 +16,10 @@ if (!isset($data['project_id'])) {
 $project_id = (int)$data['project_id'];
 $force_start = isset($data['force_start']) ? (bool)$data['force_start'] : false;
 
+// Grab the target phase so we know if they clicked Sampling OR Cutting
+$target_phase = isset($data['target_phase']) ? $data['target_phase'] : 'cutting';
+
 // 1. Fetch all required materials for this specific project
-// 🚨 FIX: Changed pb.quantity to pb.quantity_used so the database doesn't crash!
 $stmt = $conn->prepare("
     SELECT pb.material_id, pb.quantity_used as required_qty, rm.current_stock, rm.material_name 
     FROM project_breakdown pb 
@@ -64,7 +66,7 @@ $conn->begin_transaction();
 try {
     $update_stock = $conn->prepare("UPDATE raw_material SET current_stock = current_stock - ? WHERE material_id = ?");
     
-    // 🚨 THE FIX: Declare variables and bind them ONCE outside the loop
+    // Declare variables and bind them ONCE outside the loop
     $bind_qty = 0;
     $bind_id = 0;
     $update_stock->bind_param("di", $bind_qty, $bind_id);
@@ -76,9 +78,9 @@ try {
         $update_stock->execute();
     }
 
-    // Update the project to signify it has officially started!
-    $update_project = $conn->prepare("UPDATE project SET progress = 'sampling' WHERE project_id = ?");
-    $update_project->bind_param("i", $project_id);
+    // 🚨 UPDATED: Update the progress dynamically AND set the start_date to today!
+    $update_project = $conn->prepare("UPDATE project SET progress = ?, start_date = CURRENT_DATE() WHERE project_id = ?");
+    $update_project->bind_param("si", $target_phase, $project_id);
     $update_project->execute();
 
     $conn->commit();
@@ -88,4 +90,3 @@ try {
     $conn->rollback();
     echo json_encode(["status" => "error", "message" => "Database transaction failed: " . $e->getMessage()]);
 }
-?>
