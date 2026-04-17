@@ -72,12 +72,12 @@ include 'includes/header.php';
             
             <div class="relative w-48 shrink-0">
                 <select onchange="window.location.href=this.value" class="w-full px-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-bold cursor-pointer appearance-none">
-                    <option value="?view=<?= $view ?>&sort=name_asc" <?= $sort == 'name_asc' ? 'selected' : '' ?>>Sort: Name (A-Z)</option>
-                    <option value="?view=<?= $view ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Sort: Name (Z-A)</option>
-                    <option value="?view=<?= $view ?>&sort=stock_asc" <?= $sort == 'stock_asc' ? 'selected' : '' ?>>Sort: Stock (Low to High)</option>
-                    <option value="?view=<?= $view ?>&sort=stock_desc" <?= $sort == 'stock_desc' ? 'selected' : '' ?>>Sort: Stock (High to Low)</option>
-                    <option value="?view=<?= $view ?>&sort=price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Sort: Price (Low to High)</option>
-                    <option value="?view=<?= $view ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Sort: Price (High to Low)</option>
+                    <option value="?view=<?= $view ?>&sort=name_asc" <?= $sort == 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
+                    <option value="?view=<?= $view ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
+                    <option value="?view=<?= $view ?>&sort=stock_asc" <?= $sort == 'stock_asc' ? 'selected' : '' ?>>Stock (Low to High)</option>
+                    <option value="?view=<?= $view ?>&sort=stock_desc" <?= $sort == 'stock_desc' ? 'selected' : '' ?>>Stock (High to Low)</option>
+                    <option value="?view=<?= $view ?>&sort=price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Price (Low to High)</option>
+                    <option value="?view=<?= $view ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Price (High to Low)</option>
                 </select>
                 <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
             </div>

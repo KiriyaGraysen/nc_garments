@@ -4,8 +4,20 @@ require_once('config/database.php');
 
 $view_archived = (isset($_GET['view']) && $_GET['view'] === 'archived') ? 1 : 0;
 
-// Fetch Customers with Dynamic Balance Calculations
-$stmt = $conn->prepare('
+// 1. Setup Sorting Logic
+$sort = $_GET['sort'] ?? 'name_asc';
+
+switch ($sort) {
+    case 'name_desc': $order_by = "c.full_name DESC"; break;
+    case 'billed_desc': $order_by = "total_billed DESC"; break;
+    case 'paid_desc': $order_by = "total_paid DESC"; break;
+    case 'balance_desc': $order_by = "(total_billed - total_paid) DESC"; break;
+    case 'recent_pay': $order_by = "latest_payment_date DESC"; break;
+    default: $order_by = "c.full_name ASC"; break; // Default is name_asc
+}
+
+// 2. Fetch Customers with Dynamic Balance Calculations AND Sorting
+$stmt = $conn->prepare("
     SELECT 
         c.customer_id, c.full_name, c.contact_number, c.address, c.is_archived,
         COALESCE((SELECT SUM(agreed_price) FROM project WHERE customer_id = c.customer_id AND is_archived = 0), 0) as total_billed,
@@ -13,8 +25,8 @@ $stmt = $conn->prepare('
         (SELECT MAX(payment_date) FROM payment pay JOIN project p ON pay.project_id = p.project_id WHERE p.customer_id = c.customer_id) as latest_payment_date
     FROM customer c
     WHERE c.is_archived = ?
-    ORDER BY c.full_name ASC
-');
+    ORDER BY $order_by
+");
 $stmt->bind_param("i", $view_archived);
 $stmt->execute();
 $customers_result = $stmt->get_result();
@@ -24,16 +36,16 @@ $pm_stmt = $conn->prepare("SELECT DISTINCT payment_method FROM payment WHERE pay
 $pm_stmt->execute();
 $db_methods_result = $pm_stmt->get_result();
 
-// 1. Define our mandatory defaults
+// Define our mandatory defaults
 $default_methods = ['Cash', 'GCash', 'Bank Transfer'];
 $final_methods = [];
 
-// 2. Add defaults to our final list using lowercase as the "Key" to prevent duplicates
+// Add defaults to our final list using lowercase as the "Key" to prevent duplicates
 foreach ($default_methods as $method) {
     $final_methods[strtolower($method)] = $method;
 }
 
-// 3. Loop through database history and add them only if they don't already exist
+// Loop through database history and add them only if they don't already exist
 while ($row = $db_methods_result->fetch_assoc()) {
     $db_method = trim($row['payment_method']);
     $lower_key = strtolower($db_method);
@@ -44,7 +56,7 @@ while ($row = $db_methods_result->fetch_assoc()) {
     }
 }
 
-// 4. Sort them alphabetically for a clean dropdown UI
+// Sort them alphabetically for a clean dropdown UI
 sort($final_methods);
 
 function format_contact_number($phone) {
@@ -79,17 +91,45 @@ include 'includes/header.php';
         </button>
     </div>
 
-    <div class="flex gap-6 border-b border-gray-200 dark:border-zinc-800 mb-6">
-        <a href="?view=active" class="pb-3 text-sm font-bold transition-colors <?= $view_archived === 0 ? 'border-b-2 border-pink-600 text-pink-600 dark:text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400' ?>">
-            <i class="fa-solid fa-address-book mr-1.5"></i> Active Customers
-        </a>
-        <a href="?view=archived" class="pb-3 text-sm font-bold transition-colors <?= $view_archived === 1 ? 'border-b-2 border-pink-600 text-pink-600 dark:text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400' ?>">
-            <i class="fa-solid fa-box-archive mr-1.5"></i> Archived
-        </a>
+    <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
+        
+        <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
+            <div class="relative w-full group">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
+                <input type="text" id="search-input" placeholder="Search by customer name or ID..." 
+                       class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
+            </div>
+            
+            <div class="relative w-48 shrink-0">
+                <select onchange="window.location.href=this.value" class="w-full px-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-bold cursor-pointer appearance-none">
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=name_asc" <?= $sort == 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=billed_desc" <?= $sort == 'billed_desc' ? 'selected' : '' ?>>Highest Billed</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=paid_desc" <?= $sort == 'paid_desc' ? 'selected' : '' ?>>Highest Paid</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=balance_desc" <?= $sort == 'balance_desc' ? 'selected' : '' ?>>Highest Balance</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=recent_pay" <?= $sort == 'recent_pay' ? 'selected' : '' ?>>Recent Payments</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+            </div>
+        </div>
+
+        <?php
+            $active_tab = "bg-white dark:bg-zinc-800 text-pink-600 dark:text-pink-500 shadow-sm";
+            $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
+        ?>
+
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+            <a href="?view=active&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 0 ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-address-book mr-1.5"></i> Active Customers
+            </a>
+            <a href="?view=archived&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 1 ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-box-archive mr-1.5"></i> Archived
+            </a>
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
-        <div class="overflow-x-auto">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col transition-colors duration-500">
+        <div class="overflow-x-auto flex-1">
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
                     <tr>
@@ -100,10 +140,10 @@ include 'includes/header.php';
                         <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
+                <tbody id="customer-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     <?php
                     if ($customers_result->num_rows === 0) {
-                        echo '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No customers found.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-medium">No customers found.</td></tr>';
                     }
 
                     while ($cust = $customers_result->fetch_assoc()) {
@@ -115,11 +155,12 @@ include 'includes/header.php';
                         
                         $latest_date = $cust['latest_payment_date'] ? date('M d, Y', strtotime($cust['latest_payment_date'])) : 'No Payments Yet';
 
+                        // Added 'customer-row' class for JS targeting
                         echo '
-                        <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewCustomerDetails('.$cust['customer_id'].')">
+                        <tr class="customer-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewCustomerDetails('.$cust['customer_id'].')">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-500 flex items-center justify-center font-extrabold text-sm border border-pink-200 dark:border-pink-800/50">
+                                    <div class="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-500 flex items-center justify-center font-extrabold text-sm border border-pink-200 dark:border-pink-800/50 shrink-0">
                                         '.$initials.'
                                     </div>
                                     <div>
@@ -161,6 +202,11 @@ include 'includes/header.php';
                             echo '<button onclick="event.stopPropagation(); archiveCustomer('.$cust['customer_id'].')" class="text-gray-400 hover:text-rose-600 focus:outline-none p-2" title="Archive Customer">
                                       <i class="fa-solid fa-trash"></i>
                                   </button>';
+                        } else {
+                            // Added Restore button for consistency with inventory if they are in the archived view
+                            echo '<button onclick="event.stopPropagation(); restoreCustomer('.$cust['customer_id'].')" class="text-gray-400 hover:text-emerald-600 focus:outline-none p-2" title="Restore Customer">
+                                      <i class="fa-solid fa-clock-rotate-left"></i>
+                                  </button>';
                         }
 
                         echo '</td>
@@ -170,6 +216,8 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
 </main>
 
@@ -226,7 +274,7 @@ include 'includes/header.php';
                     </div>
             </div>
 
-            <div class="space-y-4 border-l pl-6 border-gray-200 dark:border-zinc-800">
+            <div class="space-y-4 lg:border-l lg:pl-6 border-gray-200 dark:border-zinc-800">
                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest border-b border-gray-200 dark:border-zinc-800 pb-2">Recent Payments</h4>
                 <div id="det_payments" class="space-y-3">
                     </div>
@@ -257,7 +305,6 @@ include 'includes/header.php';
                     <input list="payment_methods_list" id="pay_method" placeholder="Select or type a method..." required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                     <datalist id="payment_methods_list">
                         <?php 
-                        // Automatically populate with our deduplicated, sorted list!
                         foreach($final_methods as $method) {
                             echo '<option value="' . htmlspecialchars($method) . '"></option>';
                         }
@@ -279,6 +326,121 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // --- Pagination & Search Logic ---
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('customer-tbody');
+    const allRows = Array.from(tbody.querySelectorAll('tr.customer-row'));
+    const paginationContainer = document.getElementById('pagination-container');
+    const colspanCount = 5;
+    
+    let currentPage = 1;
+    const rowsPerPage = 15;
+
+    function updateTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        // Filter rows based on search term
+        const filteredRows = allRows.filter(row => {
+            const text = row.innerText.toLowerCase();
+            return text.includes(searchTerm);
+        });
+
+        // Calculate pagination based on filtered results
+        const totalItems = filteredRows.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+        
+        if (currentPage > totalPages) currentPage = 1;
+
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+
+        // Hide all rows initially
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show only the 15 rows for the current page
+        filteredRows.slice(startIndex, endIndex).forEach(row => {
+            row.style.display = '';
+        });
+
+        // Handle Empty States
+        const existingEmptyRow = document.getElementById('js-empty-state');
+        if (totalItems === 0) {
+            if (!existingEmptyRow) {
+                tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No customers found matching your search.</td></tr>`);
+            } else {
+                existingEmptyRow.style.display = '';
+            }
+        } else {
+            if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+        }
+
+        // Hide PHP's default empty state if we are doing JS rendering
+        const phpEmpty = document.getElementById('php-empty-state');
+        if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+
+        renderPagination(totalItems, totalPages);
+    }
+
+    function renderPagination(totalItems, totalPages) {
+        if (totalItems === 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                    Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="changePage(event, ${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+        `;
+
+        // Generate Page Numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (totalPages > 7) {
+                 if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                     html += makePageBtn(i);
+                 } else if (i === currentPage - 2 || i === currentPage + 2) {
+                     html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                 }
+            } else {
+                 html += makePageBtn(i);
+            }
+        }
+
+        html += `
+                    <button onclick="changePage(event, ${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>
+            </div>
+        `;
+        paginationContainer.innerHTML = html;
+    }
+
+    function makePageBtn(i) {
+        const activeClass = i === currentPage 
+            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+        return `<button onclick="changePage(event, ${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+    }
+
+    function changePage(event, page) {
+        event.stopPropagation(); // Stop row click from firing
+        currentPage = page;
+        updateTable();
+    }
+
+    // Trigger instantly as the user types
+    searchInput.addEventListener('input', () => {
+        currentPage = 1; 
+        updateTable();
+    });
+
+    // Run once on initial load
+    updateTable();
+
+    // ------------------------------------
+
     function formatCurrency(num) {
         return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -321,6 +483,19 @@ include 'includes/header.php';
         if(!confirm("Archive this customer?")) return;
         try {
             const res = await fetch('actions/delete_customer.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: id })
+            });
+            const data = await res.json();
+            if(data.status === 'success') window.location.reload();
+        } catch (e) { alert("Network Error"); }
+    }
+
+    // --- ADDED MISSING RESTORE FUNCTION ---
+    async function restoreCustomer(id) {
+        if(!confirm("Restore this customer?")) return;
+        try {
+            // Reusing the same endpoint logic pattern as inventory
+            const res = await fetch('actions/restore_customer.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: id })
             });
             const data = await res.json();

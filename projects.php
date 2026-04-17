@@ -4,8 +4,21 @@ require_once('config/database.php');
 
 $view_archived = (isset($_GET['view']) && $_GET['view'] === 'archived') ? 1 : 0;
 
-// 1. Fetch Projects
-$stmt = $conn->prepare('
+// 1. Setup Sorting Logic
+$sort = $_GET['sort'] ?? 'newest';
+
+switch ($sort) {
+    case 'name_asc': $order_by = "p.project_name ASC"; break;
+    case 'name_desc': $order_by = "p.project_name DESC"; break;
+    case 'price_desc': $order_by = "p.agreed_price DESC"; break;
+    case 'due_asc': $order_by = "p.due_date ASC"; break;
+    case 'oldest': $order_by = "p.project_id ASC"; break;
+    case 'newest':
+    default: $order_by = "p.project_id DESC"; break;
+}
+
+// 2. Fetch Projects with Sorting
+$stmt = $conn->prepare("
     SELECT 
         p.project_id, p.project_name, p.quantity, p.agreed_price, p.status, p.progress, 
         p.start_date, p.due_date, p.finish_date, p.overdue_notes,
@@ -17,8 +30,8 @@ $stmt = $conn->prepare('
     LEFT JOIN project_breakdown pb ON p.project_id = pb.project_id
     WHERE p.is_archived = ?
     GROUP BY p.project_id
-    ORDER BY p.project_id DESC
-');
+    ORDER BY $order_by
+");
 $stmt->bind_param("i", $view_archived);
 $stmt->execute();
 $project_result = $stmt->get_result();
@@ -105,17 +118,45 @@ include 'includes/header.php';
         <?php endif; ?>
     </div>
 
-    <div class="flex gap-6 border-b border-gray-200 dark:border-zinc-800 mb-6">
-        <a href="?view=active" class="pb-3 text-sm font-bold transition-colors <?= $view_archived === 0 ? 'border-b-2 border-pink-600 text-pink-600 dark:text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400' ?>">
-            <i class="fa-solid fa-layer-group mr-1.5"></i> Active Projects
-        </a>
-        <a href="?view=archived" class="pb-3 text-sm font-bold transition-colors <?= $view_archived === 1 ? 'border-b-2 border-pink-600 text-pink-600 dark:text-pink-500' : 'text-gray-500 hover:text-gray-700 dark:text-zinc-400' ?>">
-            <i class="fa-solid fa-box-archive mr-1.5"></i> Archived
-        </a>
+    <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
+        
+        <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
+            <div class="relative w-full group">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
+                <input type="text" id="search-input" placeholder="Search project name, client, or ID..." 
+                       class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
+            </div>
+            
+            <div class="relative w-48 shrink-0">
+                <select onchange="window.location.href=this.value" class="w-full px-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-bold cursor-pointer appearance-none">
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=newest" <?= $sort == 'newest' ? 'selected' : '' ?>>Newest First</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=oldest" <?= $sort == 'oldest' ? 'selected' : '' ?>>Oldest First</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=name_asc" <?= $sort == 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=due_asc" <?= $sort == 'due_asc' ? 'selected' : '' ?>>Nearest Due Date</option>
+                    <option value="?view=<?= $view_archived === 1 ? 'archived' : 'active' ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Highest Price</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+            </div>
+        </div>
+
+        <?php
+            $active_tab = "bg-white dark:bg-zinc-800 text-pink-600 dark:text-pink-500 shadow-sm";
+            $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
+        ?>
+
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+            <a href="?view=active&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 0 ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-layer-group mr-1.5"></i> Active Projects
+            </a>
+            <a href="?view=archived&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 1 ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-box-archive mr-1.5"></i> Archived
+            </a>
+        </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
-        <div class="overflow-x-auto">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col transition-colors duration-500">
+        <div class="overflow-x-auto flex-1">
             
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
@@ -128,10 +169,10 @@ include 'includes/header.php';
                     </tr>
                 </thead>
                 
-                <tbody class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
+                <tbody id="project-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     <?php
                     if ($project_result->num_rows === 0) {
-                        echo '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-medium">No projects found.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-medium">No projects found.</td></tr>';
                     }
 
                     while ($project = $project_result->fetch_assoc()) {
@@ -154,8 +195,9 @@ include 'includes/header.php';
                         $pct_color = ($project['progress'] === 'cancelled') ? 'text-rose-500' : 'text-pink-600';
                         $disabled_select = $view_archived ? 'disabled' : '';
                         
+                        // Added 'project-row' class for JS targeting
                         echo '
-                            <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewProjectDetails(' . $project['project_id'] . ')">
+                            <tr class="project-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewProjectDetails(' . $project['project_id'] . ')">
                                 <td class="px-6 py-4">
                                     <div class="font-bold text-pink-600 dark:text-pink-500 group-hover:text-pink-700 transition-colors">#PRJ-2026-' . str_pad($project['project_id'], 3, '0', STR_PAD_LEFT) . '</div>
                                     <div class="font-bold text-gray-900 dark:text-white mt-1">' . $project_name . '</div>
@@ -244,6 +286,8 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
     
     <div id="create-project-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -584,6 +628,121 @@ include 'includes/header.php';
 </main>
 
 <script>
+    // --- Pagination & Search Logic ---
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('project-tbody');
+    const allRows = Array.from(tbody.querySelectorAll('tr.project-row'));
+    const paginationContainer = document.getElementById('pagination-container');
+    const colspanCount = 5;
+    
+    let currentPage = 1;
+    const rowsPerPage = 15;
+
+    function updateTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        // Filter rows based on search term
+        const filteredRows = allRows.filter(row => {
+            const text = row.innerText.toLowerCase();
+            return text.includes(searchTerm);
+        });
+
+        // Calculate pagination based on filtered results
+        const totalItems = filteredRows.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+        
+        if (currentPage > totalPages) currentPage = 1;
+
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+
+        // Hide all rows initially
+        allRows.forEach(row => row.style.display = 'none');
+
+        // Show only the 15 rows for the current page
+        filteredRows.slice(startIndex, endIndex).forEach(row => {
+            row.style.display = '';
+        });
+
+        // Handle Empty States
+        const existingEmptyRow = document.getElementById('js-empty-state');
+        if (totalItems === 0) {
+            if (!existingEmptyRow) {
+                tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No projects found matching your search.</td></tr>`);
+            } else {
+                existingEmptyRow.style.display = '';
+            }
+        } else {
+            if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+        }
+
+        // Hide PHP's default empty state if we are doing JS rendering
+        const phpEmpty = document.getElementById('php-empty-state');
+        if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+
+        renderPagination(totalItems, totalPages);
+    }
+
+    function renderPagination(totalItems, totalPages) {
+        if (totalItems === 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                    Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="changePage(event, ${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+        `;
+
+        // Generate Page Numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (totalPages > 7) {
+                 if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                     html += makePageBtn(i);
+                 } else if (i === currentPage - 2 || i === currentPage + 2) {
+                     html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                 }
+            } else {
+                 html += makePageBtn(i);
+            }
+        }
+
+        html += `
+                    <button onclick="changePage(event, ${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>
+            </div>
+        `;
+        paginationContainer.innerHTML = html;
+    }
+
+    function makePageBtn(i) {
+        const activeClass = i === currentPage 
+            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+        return `<button onclick="changePage(event, ${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+    }
+
+    function changePage(event, page) {
+        event.stopPropagation(); // Stop row click from firing
+        currentPage = page;
+        updateTable();
+    }
+
+    // Trigger instantly as the user types
+    searchInput.addEventListener('input', () => {
+        currentPage = 1; 
+        updateTable();
+    });
+
+    // Run once on initial load
+    updateTable();
+
+    // ----------------------------------------------------
+
     let isNewProjectFlow = false; 
 
     // ==========================================
