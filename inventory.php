@@ -97,7 +97,14 @@ include 'includes/header.php';
                     }
 
                     while ($item = $items_result->fetch_assoc()) {
-                        $is_low_stock = $item['stock'] <= $item['alert'];
+                        
+                        // NEW LOGIC: Calculate Stock States
+                        $stock_val = (int)$item['stock'];
+                        $alert_val = (int)$item['alert'];
+                        
+                        $is_out_of_stock = $stock_val <= 0;
+                        $is_low_stock = !$is_out_of_stock && ($stock_val <= $alert_val);
+                        
                         $metric_label = $base_type === 'raw_material' ? htmlspecialchars($item['metric']) : 'Size: ' . htmlspecialchars($item['metric']);
 
                         // Escaping for JS injection
@@ -105,18 +112,42 @@ include 'includes/header.php';
                         $safe_name = addslashes($item['name']);
                         $safe_metric = addslashes($item['metric']);
                         
+                        // Dynamic Row Background
+                        $row_bg = '';
+                        if (!$is_archived_view) {
+                            if ($is_out_of_stock) $row_bg = 'bg-rose-50/30 dark:bg-rose-900/5';
+                            elseif ($is_low_stock) $row_bg = 'bg-amber-50/30 dark:bg-amber-900/5';
+                        }
+                        
+                        // Dynamic Text Colors for the Stock Column
+                        $stock_color = 'text-gray-900 dark:text-white';
+                        $metric_color = 'text-gray-500';
+                        $alert_color = 'text-gray-400';
+                        
+                        if (!$is_archived_view) {
+                            if ($is_out_of_stock) {
+                                $stock_color = 'text-rose-600 dark:text-rose-500';
+                                $metric_color = 'text-rose-600/70';
+                                $alert_color = 'text-rose-500';
+                            } elseif ($is_low_stock) {
+                                $stock_color = 'text-amber-600 dark:text-amber-500';
+                                $metric_color = 'text-amber-600/70';
+                                $alert_color = 'text-amber-500';
+                            }
+                        }
+                        
                         echo '
-                        <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . ($is_low_stock && !$is_archived_view ? 'bg-rose-50/30 dark:bg-rose-900/5' : '') . '">
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_bg . '">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors">'.htmlspecialchars($item['name']).'</div>
                                 <div class="text-xs font-bold tracking-wider text-gray-400 mt-1">SKU: '.htmlspecialchars($item['sku']).'</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-baseline gap-1">
-                                    <span class="text-lg font-extrabold '.($is_low_stock && !$is_archived_view ? 'text-rose-600 dark:text-rose-500' : 'text-gray-900 dark:text-white').'">'.$item['stock'].'</span>
-                                    <span class="text-xs font-bold '.($is_low_stock && !$is_archived_view ? 'text-rose-600/70' : 'text-gray-500').' uppercase">'.$metric_label.'</span>
+                                    <span class="text-lg font-extrabold '.$stock_color.'">'.$item['stock'].'</span>
+                                    <span class="text-xs font-bold '.$metric_color.' uppercase">'.$metric_label.'</span>
                                 </div>
-                                <div class="text-[10px] font-bold '.($is_low_stock && !$is_archived_view ? 'text-rose-500' : 'text-gray-400').' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
+                                <div class="text-[10px] font-bold '.$alert_color.' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="font-extrabold text-gray-900 dark:text-white">₱ '.number_format($item['price'], 2).'</div>
@@ -124,15 +155,22 @@ include 'includes/header.php';
                             </td>
                             <td class="px-6 py-4">';
                                 if ($is_archived_view) {
-                                    echo '<span class="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-gray-200 dark:border-zinc-700 flex items-center w-max gap-1">
+                                    echo '<span class="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-gray-200 dark:border-zinc-700 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-box-archive"></i> Archived
                                           </span>';
+                                } elseif ($is_out_of_stock) {
+                                    // NO STOCK BADGE (RED/ROSE)
+                                    echo '<span class="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-rose-200 dark:border-rose-500/30 flex items-center w-max gap-1.5">
+                                            <i class="fa-solid fa-circle-xmark"></i> Out of Stock
+                                          </span>';
                                 } elseif ($is_low_stock) {
-                                    echo '<span class="bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-rose-200 dark:border-rose-500/30 flex items-center w-max gap-1">
+                                    // LOW STOCK BADGE (ORANGE/AMBER)
+                                    echo '<span class="bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-amber-200 dark:border-amber-500/30 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-triangle-exclamation"></i> Low Stock
                                           </span>';
                                 } else {
-                                    echo '<span class="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-emerald-200 dark:border-emerald-500/20 flex items-center w-max gap-1">
+                                    // IN STOCK BADGE (GREEN/EMERALD)
+                                    echo '<span class="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-emerald-200 dark:border-emerald-500/20 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-check"></i> In Stock
                                           </span>';
                                 }
@@ -329,7 +367,6 @@ include 'includes/header.php';
         } catch (e) { alert("Network Error"); }
     }
 
-    // NEW: Function to Restore an archived item
     async function restoreItem(id, type) {
         if(!confirm("Restore this item back to active inventory?")) return;
         try {

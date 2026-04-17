@@ -19,7 +19,7 @@ $catalog = $products_stmt->fetch_all(MYSQLI_ASSOC);
 
 // 2. Fetch unique payment methods for the datalist
 $pm_stmt = $conn->query("SELECT DISTINCT payment_method FROM payment WHERE payment_method IS NOT NULL AND payment_method != '' UNION SELECT DISTINCT payment_method FROM retail_sale WHERE payment_method IS NOT NULL");
-$default_methods = ['Cash', 'GCash', 'Bank Transfer', 'Check'];
+$default_methods = ['Cash', 'GCash', 'Bank Transfer'];
 $final_methods = [];
 foreach ($default_methods as $method) { $final_methods[strtolower($method)] = $method; }
 while ($row = $pm_stmt->fetch_assoc()) {

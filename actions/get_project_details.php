@@ -30,10 +30,41 @@ if (isset($_GET['project_id'])) {
     $meas_stmt->execute();
     $measurements = $meas_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
+    // 4. Calculate Material Shortages (NEW LOGIC)
+    $shortages = [];
+    $shortage_stmt = $conn->prepare("
+        SELECT rm.material_name, pb.quantity_used as required_qty, rm.current_stock 
+        FROM project_breakdown pb
+        JOIN raw_material rm ON pb.material_id = rm.material_id
+        WHERE pb.project_id = ?
+    ");
+    $shortage_stmt->bind_param("i", $project_id);
+    $shortage_stmt->execute();
+    
+    // Safety check in case the query fails
+    $shortage_res = $shortage_stmt->get_result();
+    if ($shortage_res) {
+        while ($row = $shortage_res->fetch_assoc()) {
+            $missing = $row['required_qty'] - $row['current_stock'];
+            
+            // Only flag it if we are missing materials (missing > 0)
+            if ($missing > 0) {
+                $shortages[] = [
+                    'material_name' => $row['material_name'],
+                    'required_qty' => $row['required_qty'],
+                    'current_stock' => $row['current_stock'],
+                    'missing_qty' => $missing
+                ];
+            }
+        }
+    }
+    
     echo json_encode([
         "status" => "success", 
         "project" => $project,
         "sizes" => $sizes,
-        "measurements" => $measurements
+        "measurements" => $measurements,
+        "shortages" => $shortages 
     ]);
 }
+?>

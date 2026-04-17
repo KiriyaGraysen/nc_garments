@@ -25,7 +25,7 @@ $project_result = $stmt->get_result();
 
 $rm_stmt = $conn->prepare("SELECT material_id, material_name, current_price, unit_of_measure FROM raw_material ORDER BY material_name ASC");
 $rm_stmt->execute();
-$materials_json = json_encode($rm_stmt->get_result()->fetch_all(MYSQLI_ASSOC)); // <-- Added _json here!
+$materials_json = json_encode($rm_stmt->get_result()->fetch_all(MYSQLI_ASSOC)); 
 
 $cust_stmt = $conn->prepare("SELECT customer_id, full_name FROM customer ORDER BY full_name ASC");
 $cust_stmt->execute();
@@ -142,7 +142,6 @@ include 'includes/header.php';
                         $agreed_price = (float)$project['agreed_price'];
                         $material_cost = (float)$project['total_material_cost'];
                         
-                        // ADD THIS LINE:
                         $is_internal_js = empty($project['full_name']) ? 'true' : 'false';
 
                         $est_profit = $agreed_price - $material_cost;
@@ -522,6 +521,7 @@ include 'includes/header.php';
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
                     
                     <div class="lg:col-span-7 flex flex-col gap-5">
+                        
                         <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm">
                             <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2">Client / Target</h4>
                             <div id="vd_client_info" class="text-sm text-gray-800 dark:text-zinc-200 font-medium"></div>
@@ -547,8 +547,9 @@ include 'includes/header.php';
                         </div>
                     </div>
 
-                    <div class="lg:col-span-5 relative min-h-[400px] lg:min-h-0">
-                        <div class="lg:absolute inset-0 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col h-full">
+                    <div class="lg:col-span-5 flex flex-col gap-5 min-h-[400px] lg:min-h-0">
+                        
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col flex-1 min-h-0">
                             
                             <div class="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-zinc-800 pb-2 flex-none">
                                 <h4 class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Sizing & Measurements</h4>
@@ -556,8 +557,6 @@ include 'includes/header.php';
                                     <input type="checkbox" id="edit_enable_sizing_toggle" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500" onchange="toggleEditSizingModule()">
                                     <span class="text-[10px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest">Enable Sizing</span>
                                 </label>
-
-
                             </div>
                             
                             <div id="edit_sizing_area" class="hidden flex-1 overflow-hidden flex flex-col min-h-0">
@@ -605,15 +604,27 @@ include 'includes/header.php';
                                     </div>
                                 </div>
                             </div>
-
                         </div>
+
+                        <div id="vd_shortages_section" class="hidden bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-200 dark:border-rose-800/50 shadow-sm shrink-0">
+                            <h4 class="text-[11px] font-extrabold text-rose-600 dark:text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 border-b border-rose-200/50 dark:border-rose-800/50 pb-2">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Insufficient Materials
+                            </h4>
+                            <div id="vd_shortages_list" class="space-y-2 mt-2 max-h-48 overflow-y-auto pr-1">
+                                </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
             
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3 mt-auto">
-                <button onclick="closeViewDetailsModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
-                <button onclick="saveProjectUpdates()" id="btn-update-project" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md focus:outline-none">Update Project Details</button>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-between items-center mt-auto">
+                <div id="vd_action_start_production">
+                    </div>
+                <div class="flex gap-3">
+                    <button onclick="closeViewDetailsModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
+                    <button onclick="saveProjectUpdates()" id="btn-update-project" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md focus:outline-none">Update Project Details</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1068,6 +1079,45 @@ include 'includes/header.php';
                 document.getElementById('edit_quantity').value = p.quantity;
                 document.getElementById('edit_due_date').value = p.due_date || '';
                 
+                // 🚨 Render Material Shortages
+                const shortagesSection = document.getElementById('vd_shortages_section');
+                const shortagesList = document.getElementById('vd_shortages_list');
+
+                if (p.progress !== 'done' && p.progress !== 'released' && result.shortages && result.shortages.length > 0) {
+                    shortagesSection.classList.remove('hidden');
+                    let shortHtml = '';
+                    
+                    result.shortages.forEach(s => {
+                        shortHtml += `
+                            <div class="flex justify-between items-center bg-white dark:bg-zinc-950 p-2.5 rounded-lg border border-rose-100 dark:border-rose-800/30 shadow-sm">
+                                <div class="min-w-0 pr-2">
+                                    <p class="text-xs font-bold text-gray-900 dark:text-white truncate">${s.material_name}</p>
+                                    <p class="text-[9px] font-bold text-gray-500 dark:text-zinc-500 mt-0.5 uppercase tracking-wider">Req: ${s.required_qty} | Have: ${s.current_stock}</p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="text-[10px] font-black text-rose-600 dark:text-rose-500 bg-rose-100 dark:bg-rose-900/30 px-2 py-1 rounded uppercase tracking-widest">-${s.missing_qty}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    shortagesList.innerHTML = shortHtml;
+                } else {
+                    shortagesSection.classList.add('hidden');
+                    shortagesList.innerHTML = '';
+                }
+                
+                // 🟢 Inject the Smart Start Button
+                const startBtnContainer = document.getElementById('vd_action_start_production');
+                if (p.progress === 'not started') {
+                    startBtnContainer.innerHTML = `
+                        <button type="button" onclick="startProjectProduction(${projectId})" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-emerald-500/20 focus:outline-none flex items-center gap-2">
+                            <i class="fa-solid fa-scissors"></i> Start Production & Deduct Stock
+                        </button>
+                    `;
+                } else {
+                    startBtnContainer.innerHTML = '';
+                }
+
                 const sizingToggleLabel = document.getElementById('edit_sizing_toggle_label');
                 let clientHtml = '';
                 
@@ -1212,6 +1262,46 @@ include 'includes/header.php';
             alert("True Network Fetch Error: " + error.message); 
             btn.disabled = false; 
             btn.innerHTML = "Update Project Details"; 
+        }
+    }
+
+    // ==========================================
+    // 4. SMART START PRODUCTION LOGIC (Deficits)
+    // ==========================================
+    async function startProjectProduction(projectId, forceStart = false) {
+        try {
+            const response = await fetch('actions/start_production.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_id: projectId, force_start: forceStart })
+            });
+            
+            const data = await response.json();
+
+            if (data.status === 'warning') {
+                // We don't have enough materials! Prompt the user to force backorder.
+                let missingList = data.shortages.join("\n- ");
+                let confirmForce = confirm(
+                    "⚠️ INSUFFICIENT MATERIALS ⚠️\n\n" +
+                    "You do not have enough raw materials in the warehouse to complete this project. " +
+                    "Proceeding will push your inventory into a negative deficit (Backorder).\n\n" +
+                    "Missing Items:\n- " + missingList + "\n\n" +
+                    "Do you want to force-start production anyway?"
+                );
+
+                if (confirmForce) {
+                    startProjectProduction(projectId, true); // Run again, but force it!
+                }
+                
+            } else if (data.status === 'success') {
+                alert(data.message);
+                window.location.reload(); 
+            } else {
+                alert("Error: " + data.message);
+            }
+            
+        } catch (error) {
+            alert("A network error occurred while trying to start production.");
         }
     }
 </script>
