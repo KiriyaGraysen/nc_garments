@@ -667,8 +667,8 @@ include 'includes/header.php';
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
         tr.innerHTML = `
-            <td class="py-2 pr-2"><input type="text" placeholder="e.g., Medium" class="sizing-label w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500"></td>
-            <td class="py-2 pr-2"><input type="number" min="1" value="1" class="sizing-qty w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500" oninput="calculateTotalStandardQuantity()"></td>
+            <td class="py-2 pr-2"><input type="text" placeholder="e.g., Medium" class="sizing-label w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td>
+            <td class="py-2 pr-2"><input type="number" min="1" value="1" class="sizing-qty w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" oninput="calculateTotalStandardQuantity()"></td>
             <td class="py-2 text-right"><button type="button" onclick="this.closest('tr').remove(); calculateTotalStandardQuantity();" class="text-gray-400 hover:text-rose-500 focus:outline-none p-1"><i class="fa-solid fa-trash text-[10px]"></i></button></td>
         `;
         tbody.appendChild(tr);
@@ -688,9 +688,9 @@ include 'includes/header.php';
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
         tr.innerHTML = `
-            <td class="py-2 pr-2"><input type="text" placeholder="e.g., Chest" class="measure-part w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500"></td>
-            <td class="py-2 pr-2"><input type="number" step="0.25" placeholder="0.00" class="measure-val w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500"></td>
-            <td class="py-2 pr-2"><select class="measure-unit w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-sm outline-none focus:border-pink-500"><option value="inches">inches</option><option value="cm">cm</option></select></td>
+            <td class="py-2 pr-2"><input type="text" placeholder="e.g., Chest" class="measure-part w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td>
+            <td class="py-2 pr-2"><input type="number" step="0.25" placeholder="0.00" class="measure-val w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td>
+            <td class="py-2 pr-2"><select class="measure-unit w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"><option value="inches">inches</option><option value="cm">cm</option></select></td>
             <td class="py-2 text-right"><button type="button" onclick="this.closest('tr').remove();" class="text-gray-400 hover:text-rose-500 focus:outline-none p-1"><i class="fa-solid fa-trash text-[10px]"></i></button></td>
         `;
         tbody.appendChild(tr);
@@ -1150,18 +1150,20 @@ include 'includes/header.php';
         }
     }
 
+    // 🚨 UPDATED TEXT COLORS HERE
     function addEditStandardRow(label = '', qty = 1) {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
-        tr.innerHTML = `<td class="py-1.5 pr-2"><input type="text" value="${label}" class="edit-sz-label w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded text-sm outline-none"></td><td class="py-1.5 pr-2"><input type="number" min="1" value="${qty}" class="edit-sz-qty w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded text-sm outline-none" oninput="calculateEditTotalQty()"></td><td class="py-1.5 text-right"><button type="button" onclick="this.closest('tr').remove(); calculateEditTotalQty();" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-trash text-[10px]"></i></button></td>`;
+        tr.innerHTML = `<td class="py-1.5 pr-2"><input type="text" value="${label}" class="edit-sz-label w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white rounded text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td><td class="py-1.5 pr-2"><input type="number" min="1" value="${qty}" class="edit-sz-qty w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white rounded text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" oninput="calculateEditTotalQty()"></td><td class="py-1.5 text-right"><button type="button" onclick="this.closest('tr').remove(); calculateEditTotalQty();" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-trash text-[10px]"></i></button></td>`;
         document.getElementById('edit_standard_tbody').appendChild(tr);
         calculateEditTotalQty();
     }
 
+    // 🚨 UPDATED TEXT COLORS HERE
     function addEditCustomRow(part = '', val = '', unit = 'inches') {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
-        tr.innerHTML = `<td class="py-1.5 pr-2"><input type="text" value="${part}" class="edit-ms-part w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded text-sm outline-none"></td><td class="py-1.5 pr-2"><input type="number" step="0.25" value="${val}" class="edit-ms-val w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded text-sm outline-none"></td><td class="py-1.5 pr-2"><select class="edit-ms-unit w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded text-sm outline-none"><option value="inches" ${unit==='inches'?'selected':''}>inches</option><option value="cm" ${unit==='cm'?'selected':''}>cm</option></select></td><td class="py-1.5 text-right"><button type="button" onclick="this.closest('tr').remove();" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-trash text-[10px]"></i></button></td>`;
+        tr.innerHTML = `<td class="py-1.5 pr-2"><input type="text" value="${part}" class="edit-ms-part w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white rounded text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td><td class="py-1.5 pr-2"><input type="number" step="0.25" value="${val}" class="edit-ms-val w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white rounded text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"></td><td class="py-1.5 pr-2"><select class="edit-ms-unit w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white rounded text-sm outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"><option value="inches" ${unit==='inches'?'selected':''}>inches</option><option value="cm" ${unit==='cm'?'selected':''}>cm</option></select></td><td class="py-1.5 text-right"><button type="button" onclick="this.closest('tr').remove();" class="text-gray-400 hover:text-rose-500"><i class="fa-solid fa-trash text-[10px]"></i></button></td>`;
         document.getElementById('edit_custom_tbody').appendChild(tr);
     }
 
@@ -1235,7 +1237,6 @@ include 'includes/header.php';
     // ==========================================
     // 4. SMART START PRODUCTION LOGIC (Deficits)
     // ==========================================
-    // 🚨 UPDATED LOGIC: Added 'targetPhase' argument to dynamically route to Sampling OR Cutting
     async function startProjectProduction(projectId, forceStart = false, targetPhase = 'cutting') {
         try {
             const response = await fetch('actions/start_production.php', {
@@ -1259,7 +1260,7 @@ include 'includes/header.php';
                 if (confirmForce) {
                     startProjectProduction(projectId, true, targetPhase);
                 } else {
-                    window.location.reload(); // reset the dropdown if they cancel
+                    window.location.reload(); 
                 }
                 
             } else if (data.status === 'success') {
@@ -1274,7 +1275,6 @@ include 'includes/header.php';
         }
     }
 
-    // 🚨 NEW LOGIC: Refunding materials
     async function refundProjectMaterials(projectId) {
         try {
             const response = await fetch('actions/refund_materials.php', {
