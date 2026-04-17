@@ -4,9 +4,7 @@ require_once('config/database.php');
 
 $view_archived = (isset($_GET['view']) && $_GET['view'] === 'archived') ? 1 : 0;
 
-// 1. Setup Sorting Logic
 $sort = $_GET['sort'] ?? 'newest';
-
 switch ($sort) {
     case 'name_asc': $order_by = "p.project_name ASC"; break;
     case 'name_desc': $order_by = "p.project_name DESC"; break;
@@ -17,7 +15,6 @@ switch ($sort) {
     default: $order_by = "p.project_id DESC"; break;
 }
 
-// 2. Fetch Projects with Sorting
 $stmt = $conn->prepare("
     SELECT 
         p.project_id, p.project_name, p.quantity, p.agreed_price, p.status, p.progress, 
@@ -48,7 +45,6 @@ $prod_stmt = $conn->prepare("SELECT product_id, product_name, size FROM premade_
 $prod_stmt->execute();
 $products = $prod_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Progress Bar Mapping
 $progress_percentages = [
     'not started' => 0, 'sampling' => 15, 'cutting' => 30, 
     'printing' => 45, 'sewing' => 60, 'quality check' => 75, 
@@ -194,8 +190,13 @@ include 'includes/header.php';
                         $bar_color = ($project['progress'] === 'cancelled') ? 'bg-rose-500' : 'bg-pink-600';
                         $pct_color = ($project['progress'] === 'cancelled') ? 'text-rose-500' : 'text-pink-600';
                         $disabled_select = $view_archived ? 'disabled' : '';
+
+                        // 🚨 FILTER DROPDOWN FOR INTERNAL RESTOCK
+                        $current_project_options = $progress_options;
+                        if ($is_internal_js === 'true') {
+                            $current_project_options = array_values(array_diff($progress_options, ['packing', 'released']));
+                        }
                         
-                        // Added 'project-row' class for JS targeting
                         echo '
                             <tr class="project-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group cursor-pointer" onclick="viewProjectDetails(' . $project['project_id'] . ')">
                                 <td class="px-6 py-4">
@@ -218,7 +219,7 @@ include 'includes/header.php';
                                     </div>
                                     <select onchange="updateProgress(' . $project['project_id'] . ', this.value, \'' . $project['progress'] . '\')" '.$disabled_select.' class="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-900 dark:text-white text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-pink-500 transition-all uppercase tracking-wider cursor-pointer shadow-sm disabled:opacity-50">
                                         ';
-                                        foreach ($progress_options as $opt) {
+                                        foreach ($current_project_options as $opt) {
                                             $selected = ($project['progress'] === $opt) ? 'selected' : '';
                                             echo '<option value="'.$opt.'" '.$selected.'>'.$opt.'</option>';
                                         }
@@ -237,12 +238,9 @@ include 'includes/header.php';
                                     </div>
                                 </td>
                                 
-                                <td class="px-6 py-4" onclick="event.stopPropagation();">
-                                    <div class="font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                                <td class="px-6 py-4">
+                                    <div class="font-extrabold text-gray-900 dark:text-white">
                                         ₱ ' . number_format($agreed_price, 2) . '
-                                        <button onclick="editAgreedPrice(' . $project['project_id'] . ', ' . $agreed_price . ')" class="text-gray-400 hover:text-pink-600 focus:outline-none cursor-pointer" title="Edit Price">
-                                            <i class="fa-solid fa-pen text-[10px]"></i>
-                                        </button>
                                     </div>
                                     <div class="text-[11px] font-bold text-gray-500 dark:text-zinc-400 tracking-wide mt-1 uppercase">Cost: ₱ ' . number_format($material_cost, 2) . '</div>
                                     <div class="text-[11px] font-bold ' . $profit_color . ' tracking-wide mt-0.5 uppercase">Est. Profit: ₱ ' . number_format($est_profit, 2) . '</div>
@@ -625,6 +623,23 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
+    
+    <div id="internal-stock-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-emerald-100 dark:border-emerald-900/30">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-emerald-200 dark:border-emerald-500/30">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Restock Complete!</h3>
+                <p class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed" id="internal_stock_msg"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+                <button onclick="closeInternalStockModal()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 focus:outline-none transition-all">Awesome</button>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <script>
@@ -641,13 +656,11 @@ include 'includes/header.php';
     function updateTable() {
         const searchTerm = searchInput.value.toLowerCase();
         
-        // Filter rows based on search term
         const filteredRows = allRows.filter(row => {
             const text = row.innerText.toLowerCase();
             return text.includes(searchTerm);
         });
 
-        // Calculate pagination based on filtered results
         const totalItems = filteredRows.length;
         const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
         
@@ -656,15 +669,12 @@ include 'includes/header.php';
         const startIndex = (currentPage - 1) * rowsPerPage;
         const endIndex = startIndex + rowsPerPage;
 
-        // Hide all rows initially
         allRows.forEach(row => row.style.display = 'none');
 
-        // Show only the 15 rows for the current page
         filteredRows.slice(startIndex, endIndex).forEach(row => {
             row.style.display = '';
         });
 
-        // Handle Empty States
         const existingEmptyRow = document.getElementById('js-empty-state');
         if (totalItems === 0) {
             if (!existingEmptyRow) {
@@ -676,7 +686,6 @@ include 'includes/header.php';
             if (existingEmptyRow) existingEmptyRow.style.display = 'none';
         }
 
-        // Hide PHP's default empty state if we are doing JS rendering
         const phpEmpty = document.getElementById('php-empty-state');
         if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
 
@@ -698,7 +707,6 @@ include 'includes/header.php';
                     <button onclick="changePage(event, ${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
         `;
 
-        // Generate Page Numbers
         for (let i = 1; i <= totalPages; i++) {
             if (totalPages > 7) {
                  if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
@@ -727,18 +735,16 @@ include 'includes/header.php';
     }
 
     function changePage(event, page) {
-        event.stopPropagation(); // Stop row click from firing
+        event.stopPropagation(); 
         currentPage = page;
         updateTable();
     }
 
-    // Trigger instantly as the user types
     searchInput.addEventListener('input', () => {
         currentPage = 1; 
         updateTable();
     });
 
-    // Run once on initial load
     updateTable();
 
     // ----------------------------------------------------
@@ -1087,19 +1093,6 @@ include 'includes/header.php';
         } catch (error) { alert("Network error while deleting."); }
     }
 
-    async function editAgreedPrice(projectId, currentPrice) {
-        let newPrice = prompt("Enter new agreed price (₱):", currentPrice);
-        if (newPrice !== null) {
-            if (isNaN(newPrice) || newPrice.trim() === "") return alert("Please enter a valid number.");
-            try {
-                const response = await fetch('actions/update_agreed_price.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, agreed_price: newPrice }) });
-                const result = await response.json();
-                if (result.status === 'success') window.location.reload();
-                else alert("Failed to update price.");
-            } catch (error) { alert("Network error."); }
-        }
-    }
-
     // ==========================================
     // 3. PROGRESS, NOTES, ARCHIVE & DETAILS
     // ==========================================
@@ -1132,9 +1125,28 @@ include 'includes/header.php';
         try {
             const res = await fetch('actions/update_progress.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_id: projectId, progress: newProgress }) });
             const data = await res.json();
-            if (data.status === 'success') window.location.reload();
-            else alert("Error updating progress");
+            
+            // 🚨 NEW LOGIC: Handle Internal Restock Modal Triggers
+            if (data.status === 'success') {
+                if (data.stock_action === 'added') {
+                    document.getElementById('internal_stock_msg').textContent = data.stock_message;
+                    document.getElementById('internal-stock-modal').classList.remove('hidden');
+                } else if (data.stock_action === 'deducted') {
+                    alert(data.stock_message);
+                    window.location.reload();
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                alert("Error updating progress");
+            }
         } catch(e) { alert("Network Error"); }
+    }
+
+    // 🚨 NEW FUNCTION: Close Modal and Reload
+    function closeInternalStockModal() {
+        document.getElementById('internal-stock-modal').classList.add('hidden');
+        window.location.reload();
     }
 
     function openNotesModal(id, currentNotes) {
@@ -1309,7 +1321,6 @@ include 'includes/header.php';
         }
     }
 
-    // 🚨 UPDATED TEXT COLORS HERE
     function addEditStandardRow(label = '', qty = 1) {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
@@ -1318,7 +1329,6 @@ include 'includes/header.php';
         calculateEditTotalQty();
     }
 
-    // 🚨 UPDATED TEXT COLORS HERE
     function addEditCustomRow(part = '', val = '', unit = 'inches') {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-100 dark:border-zinc-800/50";
