@@ -192,7 +192,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
 
-                <div class="relative group flex-1">
+                <div class="relative group flex-1 hidden sm:block">
                     <i class="fa-solid fa-search absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors"></i>
                     <input type="text" placeholder="Search orders, customers..." 
                            class="w-full pl-8 pr-4 py-2 bg-transparent border-none text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-0 transition-colors">
@@ -201,6 +201,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
             <div class="flex items-center gap-4 md:gap-6">
                 
+                <div class="hidden lg:flex flex-col text-right justify-center">
+                    <span id="live-time" class="text-sm font-extrabold text-gray-900 dark:text-white tracking-widest leading-none mb-0.5">
+                        --:--:--
+                    </span>
+                    <span id="live-date" class="text-[9px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest leading-none">
+                        ----, --- --, ----
+                    </span>
+                </div>
+                
+                <div class="hidden lg:block h-6 w-px bg-gray-200 dark:bg-zinc-800 mx-1"></div>
+
                 <button id="theme-toggle" class="text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none" title="Toggle Dark Mode">
                     <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
                 </button>
@@ -250,3 +261,49 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </div>
             </div>
         </header>
+
+        <script>
+            function updateLiveClock() {
+                const now = new Date();
+                
+                // Format Time (e.g., 02:45:12 PM)
+                let hours = now.getHours();
+                let minutes = now.getMinutes();
+                let seconds = now.getSeconds();
+                let ampm = hours >= 12 ? 'PM' : 'AM';
+                
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                
+                // Add leading zeros
+                hours = hours < 10 ? '0' + hours : hours;
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                
+                const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+                
+                // Format Date (e.g., Friday, Apr 17, 2026)
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                const dayName = days[now.getDay()];
+                const monthName = months[now.getMonth()];
+                const dateNum = now.getDate();
+                const year = now.getFullYear();
+                
+                const dateString = dayName + ', ' + monthName + ' ' + dateNum + ', ' + year;
+
+                // Update the HTML
+                const timeEl = document.getElementById('live-time');
+                const dateEl = document.getElementById('live-date');
+                
+                if (timeEl && dateEl) {
+                    timeEl.textContent = timeString;
+                    dateEl.textContent = dateString;
+                }
+            }
+
+            // Run immediately, then update every second
+            updateLiveClock();
+            setInterval(updateLiveClock, 1000);
+        </script>
