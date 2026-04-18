@@ -147,11 +147,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
         }
     </script>
 </head>
-<body class="flex h-screen bg-gray-50 dark:bg-zinc-950 font-sans overflow-hidden transition-colors duration-500 antialiased">
+<body class="flex h-[100dvh] bg-gray-50 dark:bg-zinc-950 font-sans overflow-hidden transition-colors duration-500 antialiased">
     
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden transition-opacity backdrop-blur-sm" onclick="toggleSidebar()"></div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-zinc-900 dark:bg-black text-white flex flex-col shrink-0 transition-transform duration-300 ease-in-out -translate-x-full md:relative md:translate-x-0 border-r border-transparent dark:border-zinc-800">
+    <aside id="sidebar" class="fixed top-0 left-0 h-[100dvh] z-50 w-72 bg-zinc-900 dark:bg-black text-white flex flex-col shrink-0 transition-transform duration-300 ease-in-out -translate-x-full md:relative md:translate-x-0 border-r border-transparent dark:border-zinc-800">
         
         <div class="h-16 flex items-center justify-between px-6 shrink-0 border-b border-zinc-800 dark:border-zinc-900 relative overflow-hidden">
             <div class="absolute left-0 top-0 w-32 h-32 bg-pink-600/10 rounded-full blur-2xl pointer-events-none"></div>
