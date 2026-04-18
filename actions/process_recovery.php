@@ -47,6 +47,20 @@ $update_stmt = $conn->prepare("UPDATE admin SET reset_token = ?, reset_expires =
 $update_stmt->bind_param("ssi", $token, $expires, $user['admin_id']);
 $update_stmt->execute();
 
+// 🚨 LOG THE SECURITY ACTIVITY
+$action = 'UPDATE';
+$target_table = 'admin'; // Routes to the Security tab
+$ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+
+// Detailed description tracking the IP
+$description = "Requested a password reset link via email from IP: $ip_address.";
+
+$log_stmt = $conn->prepare("INSERT INTO activity_log (admin_id, action, target_table, target_id, description) VALUES (?, ?, ?, ?, ?)");
+// Notice we use $user['admin_id'] as the actor, even though they aren't logged in!
+$log_stmt->bind_param("issis", $user['admin_id'], $action, $target_table, $user['admin_id'], $description);
+$log_stmt->execute();
+
+
 // 4. Construct the reset link (UPDATE THIS TO YOUR ACTUAL LOCALHOST URL)
 $reset_link = "http://localhost/nc-garments/reset-password.php?token=" . $token;
 

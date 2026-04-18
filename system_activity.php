@@ -1,7 +1,7 @@
 <?php
 require_once('config/database.php');
 
-// SECURITY KICK-OUT: Only let authorized roles see the Audit Log!
+// SECURITY KICK-OUT
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     header("Location: index.php");
     exit();
@@ -9,26 +9,26 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superad
 
 $page_title = "System Activity | NC Garments";
 
-// 1. Determine which tab the user is viewing (default to 'all')
+// 1. Determine which tab the user is viewing
 $view = $_GET['view'] ?? 'all';
 $where_sql = "";
 
-// 2. Dynamically build the SQL WHERE clause based on the tab
 switch ($view) {
     case 'inventory':
         $where_sql = "WHERE log.target_table IN ('raw_material', 'premade_product', 'project_breakdown', 'inventory_adjustments')";
         break;
     case 'payment':
-        $where_sql = "WHERE log.target_table = 'payment'";
+        // Modified to show both Custom Project Payments and POS Retail Sales!
+        $where_sql = "WHERE log.target_table IN ('payment', 'retail_sale')";
         break;
     case 'security':
         $where_sql = "WHERE log.target_table = 'admin' OR log.action IN ('LOGIN', 'LOGOUT')";
         break;
     default:
-        $where_sql = ""; // 'all' requires no filter
+        $where_sql = ""; 
 }
 
-// 3. Fetch the logs with the dynamic filter applied
+// 3. Fetch the logs
 $stmt = $conn->prepare("
     SELECT 
         log.log_id, log.action, log.target_table, log.description, log.created_at,
@@ -42,10 +42,9 @@ $stmt = $conn->prepare("
 $stmt->execute();
 $log_result = $stmt->get_result();
 
-// 4. SMART LOG FORMATTER: Highlights "from X to Y" automatically!
+// 4. Smart Log Formatter for old text logs
 function format_log_description($text) {
     $clean_text = htmlspecialchars($text);
-    // Uses Regex to find "from 10 to 15" and applies Tailwind colors to the numbers
     $pattern = '/from\s+([0-9\.,]+)\s+to\s+([0-9\.,]+)/i';
     $replacement = '<span class="text-gray-400 dark:text-zinc-500 font-normal mx-1 lowercase">from</span><span class="text-rose-500 dark:text-rose-400 line-through font-black">$1</span><span class="text-gray-400 dark:text-zinc-500 font-normal mx-1 lowercase">to</span><span class="text-emerald-600 dark:text-emerald-500 font-black">$2</span>';
     return preg_replace($pattern, $replacement, $clean_text);
@@ -67,7 +66,6 @@ include 'includes/header.php';
     </div>
 
     <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
-        
         <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
             <div class="relative w-full group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
@@ -132,7 +130,7 @@ include 'includes/header.php';
                             $user_name = htmlspecialchars($log['full_name']);
                             $user_role = htmlspecialchars($log['role']);
                             $user_initials = strtoupper(substr($user_name, 0, 2));
-                            $avatar_class = ($user_role === 'Superadmin' || $user_role === 'admin') ? "bg-pink-600 text-white shadow-md shadow-pink-600/20" : "bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700";
+                            $avatar_class = ($user_role === 'superadmin' || $user_role === 'admin') ? "bg-pink-600 text-white shadow-md shadow-pink-600/20" : "bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700";
                         }
 
                         $action = strtoupper($log['action']);
@@ -151,10 +149,31 @@ include 'includes/header.php';
                         } elseif ($action === 'LOGIN' || $action === 'LOGOUT') {
                             $badge_class = "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-500/20";
                             $icon = "fa-shield-halved";
+                        } elseif ($action === 'EXPORT') {
+                            $badge_class = "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 border-purple-200 dark:border-purple-500/20";
+                            $icon = "fa-file-export";
+                        }
+
+                        // 🚨 JSON PARSING LOGIC FOR DETAILS
+                        $desc_data = json_decode($log['description'], true);
+                        $is_detailed = is_array($desc_data) && isset($desc_data['is_detailed']) && $desc_data['is_detailed'];
+                        
+                        $row_attr = '';
+                        $details_badge = '';
+                        
+                        if ($is_detailed) {
+                            $display_desc = format_log_description($desc_data['summary']);
+                            // Safely embed the JSON inside a data attribute
+                            $json_string = htmlspecialchars($log['description'], ENT_QUOTES, 'UTF-8');
+                            $row_attr = 'onclick="viewLogDetails(this)" data-details="' . $json_string . '" class="log-row cursor-pointer hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group" title="Click to view details"';
+                            $details_badge = '<div class="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 px-2 py-1 rounded border border-pink-200 dark:border-pink-500/20 uppercase tracking-widest"><i class="fa-solid fa-magnifying-glass"></i> View Record</div>';
+                        } else {
+                            $display_desc = format_log_description($log['description']);
+                            $row_attr = 'class="log-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group"';
                         }
 
                         echo '
-                        <tr class="log-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group">
+                        <tr ' . $row_attr . '>
                             <td class="px-6 py-4">
                                 <div class="text-gray-900 dark:text-white font-bold text-xs">'.$time_str.'</div>
                                 <div class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 mt-1 uppercase tracking-wider">'.$date_str.'</div>
@@ -165,7 +184,7 @@ include 'includes/header.php';
                                         '.$user_initials.'
                                     </div>
                                     <div>
-                                        <div class="font-bold text-gray-900 dark:text-white">'.$user_name.'</div>
+                                        <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors">'.$user_name.'</div>
                                         <div class="text-[10px] font-bold tracking-wider text-gray-400 dark:text-zinc-500 mt-0.5 uppercase">'.$user_role.'</div>
                                     </div>
                                 </div>
@@ -178,8 +197,9 @@ include 'includes/header.php';
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900 dark:text-white text-xs uppercase tracking-widest text-gray-500 dark:text-zinc-400 mb-1">Module: '.htmlspecialchars($log['target_table']).'</div>
                                 <div class="text-[12px] font-semibold text-gray-700 dark:text-zinc-300 whitespace-normal max-w-md leading-relaxed">
-                                    '.format_log_description($log['description']).'
+                                    '.$display_desc.'
                                 </div>
+                                '.$details_badge.'
                             </td>
                         </tr>';
                     }
@@ -188,8 +208,46 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
-        
         <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
+    </div>
+
+    <div id="log-details-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeLogDetails()"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-gray-100 dark:border-zinc-800">
+            
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
+                <div>
+                    <h3 id="ld_title" class="text-lg font-bold text-gray-900 dark:text-white">Record Details</h3>
+                    <p id="ld_project" class="text-xs font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest mt-1">Project Name</p>
+                </div>
+                <button onclick="closeLogDetails()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1">
+                
+                <div id="ld_summary_wrapper" class="bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 p-4 rounded-xl mb-6">
+                    <p id="ld_summary_container" class="text-xs font-bold text-gray-700 dark:text-zinc-300 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info"></i> <span id="ld_summary">Summary goes here.</span>
+                    </p>
+                </div>
+
+                <h4 id="ld_table_title" class="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-3 border-b border-gray-200 dark:border-zinc-800 pb-2">Record Snapshot</h4>
+                
+                <table class="w-full text-left">
+                    <thead id="ld_table_head">
+                        </thead>
+                    <tbody id="ld_tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50">
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="ld_footer" class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-between items-center">
+                <p id="ld_footer_text" class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Total Value</p>
+                <p id="ld_total" class="text-lg font-black text-rose-600 dark:text-rose-500 leading-none">₱ 0.00</p>
+            </div>
+        </div>
     </div>
 
     <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
@@ -332,10 +390,113 @@ include 'includes/header.php';
         });
     }
 
-    // Overwrite the native functions
     window.alert = customAlert;
 
-    // --- Standard Pagination & Search Logic ---
+    // 🚨 NEW: DYNAMIC MODAL PARSER
+    function viewLogDetails(rowElement) {
+        const dataStr = rowElement.getAttribute('data-details');
+        if (!dataStr) return;
+
+        try {
+            const data = JSON.parse(dataStr);
+            if (!data.is_detailed) return;
+
+            // Set Universal Data
+            document.getElementById('ld_project').textContent = data.project;
+            document.getElementById('ld_summary').textContent = data.summary;
+            
+            let html = '';
+            
+            // ===============================================
+            // SCENARIO 1: DELTA LOGGING (Before & After)
+            // ===============================================
+            if (data.type === 'update_comparison') {
+                
+                document.getElementById('ld_title').textContent = "Update Details";
+                document.getElementById('ld_table_title').textContent = "Modified Fields";
+                
+                // Style Summary Wrapper (Amber/Blue)
+                document.getElementById('ld_summary_wrapper').className = "bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-4 rounded-xl mb-6";
+                document.getElementById('ld_summary_container').className = "text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2";
+
+                // Build 3-Column Header
+                document.getElementById('ld_table_head').innerHTML = `
+                    <tr class="text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest border-b border-gray-100 dark:border-zinc-800">
+                        <th class="pb-2 w-1/4">Field Changed</th>
+                        <th class="pb-2 w-3/8 text-rose-500">Original Value</th>
+                        <th class="pb-2 w-3/8 text-emerald-600 text-right">New Value</th>
+                    </tr>
+                `;
+                
+                // Build Rows
+                if (data.changes && data.changes.length > 0) {
+                    data.changes.forEach(c => {
+                        html += `
+                            <tr class="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                <td class="py-3 pr-2 text-xs font-bold text-gray-900 dark:text-white align-top">${c.field}</td>
+                                <td class="py-3 pr-2 text-xs font-medium text-rose-500 line-through align-top whitespace-pre-wrap">${c.old}</td>
+                                <td class="py-3 text-xs font-bold text-emerald-600 dark:text-emerald-500 text-right align-top whitespace-pre-wrap">${c.new}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                // Hide Financial Footer
+                document.getElementById('ld_footer').classList.add('hidden');
+                
+            // ===============================================
+            // SCENARIO 2: FINANCIAL/INVENTORY (Receipt)
+            // ===============================================
+            } else {
+                
+                document.getElementById('ld_title').textContent = "Archived Record Details";
+                document.getElementById('ld_table_title').textContent = "Deleted Items Snapshot";
+
+                // Style Summary Wrapper (Rose)
+                document.getElementById('ld_summary_wrapper').className = "bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-4 rounded-xl mb-6";
+                document.getElementById('ld_summary_container').className = "text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2";
+
+                // Build 4-Column Header
+                document.getElementById('ld_table_head').innerHTML = `
+                    <tr class="text-[10px] font-extrabold text-gray-400 dark:text-zinc-500 uppercase tracking-widest border-b border-gray-100 dark:border-zinc-800">
+                        <th class="pb-2 w-1/2">Material Details</th>
+                        <th class="pb-2 text-right">Quantity</th>
+                        <th class="pb-2 text-right">Unit Cost</th>
+                        <th class="pb-2 text-right">Total Value</th>
+                    </tr>
+                `;
+                
+                // Build Rows
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        html += `
+                            <tr class="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                <td class="py-3 pr-2 text-xs font-bold text-gray-900 dark:text-white">${item.name}</td>
+                                <td class="py-3 pr-2 text-xs font-bold text-gray-500 dark:text-zinc-400 text-right">${item.qty}</td>
+                                <td class="py-3 pr-2 text-xs font-bold text-gray-500 dark:text-zinc-400 text-right">₱ ${parseFloat(item.unit_cost).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                                <td class="py-3 text-xs font-black text-gray-900 dark:text-white text-right">₱ ${parseFloat(item.total).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                // Show Financial Footer
+                document.getElementById('ld_total').textContent = '₱ ' + parseFloat(data.total_value).toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('ld_footer').classList.remove('hidden');
+            }
+            
+            document.getElementById('ld_tbody').innerHTML = html;
+            document.getElementById('log-details-modal').classList.remove('hidden');
+        } catch (e) {
+            console.error("Failed to parse log details:", e);
+        }
+    }
+
+    function closeLogDetails() {
+        document.getElementById('log-details-modal').classList.add('hidden');
+    }
+
+    // --- Search Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('log-tbody');
     
@@ -369,7 +530,6 @@ include 'includes/header.php';
                 row.style.display = '';
             });
 
-            // 🚨 FIXED LOGIC: Only show JS empty state if we actually have database rows, but the search filtered them all out.
             const existingEmptyRow = document.getElementById('js-empty-state');
             if (totalItems === 0 && allRows.length > 0) {
                 if (!existingEmptyRow) {
@@ -439,12 +599,11 @@ include 'includes/header.php';
             updateTable();
         });
 
-        // Initialize table
         updateTable();
     }
 
     async function exportLogs() {
-        const isConfirmed = await customConfirm("Are you sure you want to export all activity logs to a CSV file?", "Export Logs", "Yes, Export", "info");
+        const isConfirmed = await customConfirm("Are you sure you want to export all visible activity logs to a CSV file?", "Export Logs", "Yes, Export", "info");
         if (isConfirmed) {
             window.location.href = `actions/export_logs.php?view=<?= htmlspecialchars($view) ?>`;
         }
