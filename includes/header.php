@@ -7,8 +7,9 @@ if (empty($_SESSION['admin_id'])) {
     exit();
 }
 
+// 🚨 Added 'email' to your SELECT just in case you use it later!
 $stmt = $conn->prepare("
-    SELECT full_name, username, role
+    SELECT full_name, username, email, role
     FROM admin
     WHERE admin_id = ?
 ");
@@ -23,7 +24,6 @@ $stmt->close();
 // 🚨 FETCH LOW STOCK NOTIFICATIONS (UNIFIED)
 // ==========================================
 $low_stock_alerts = [];
-// Use UNION ALL to grab low stock from BOTH tables
 $notif_query = $conn->query("
     SELECT material_name as name, current_stock as stock, min_stock_alert as alert, unit_of_measure as metric, 'raw_material' as type 
     FROM raw_material 
@@ -46,35 +46,22 @@ if ($notif_query) {
 $notif_count = count($low_stock_alerts);
 
 function generate_initials($name) {
-    // 1. Remove any accidental spaces at the start or end
     $name = trim($name);
-    
-    // Fallback if the name is somehow empty
-    if (empty($name)) {
-        return "U"; // 'U' for User
-    }
-
-    // 2. Split the name into an array of words
+    if (empty($name)) return "U"; 
     $words = explode(" ", $name);
     $word_count = count($words);
 
     if ($word_count >= 2) {
-        // CONDITION A: 2 or more words (e.g., "Sherwin Samonte" -> "SS")
         $first_letter = substr($words[0], 0, 1);
         $last_letter = substr(end($words), 0, 1);
         $initials = $first_letter . $last_letter;
     } else {
-        // CONDITION B: Only 1 word (e.g., "Admin" -> "AD")
         $initials = substr($name, 0, 2);
     }
-
-    // 3. Return it in uppercase
     return strtoupper($initials);
 }
 
 $admin_initials = generate_initials(htmlspecialchars($admin['full_name']));
-
-// Get the current filename (e.g., 'index.php', 'inventory.php') to highlight the active menu link
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
@@ -86,7 +73,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <link rel="icon" href="../assets/images/icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -98,7 +84,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </style>
 
 <style>
-        /* 1. HIDE NUMBER INPUT SPINNERS GLOBALLY */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -107,57 +92,38 @@ $current_page = basename($_SERVER['PHP_SELF']);
         input[type=number] {
             -moz-appearance: textfield;
         }
-
-        /* 2. FIX CALENDAR ICON IN DARK MODE */
         .dark input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1) brightness(100%);
             cursor: pointer;
         }
-
-        /* ==========================================
-           3. CUSTOM NC GARMENTS SCROLLBAR
-           ========================================== */
-        
-        /* Firefox Support */
         * {
             scrollbar-width: thin;
-            scrollbar-color: #d1d5db transparent; /* gray-300 */
+            scrollbar-color: #d1d5db transparent;
         }
         .dark * {
-            scrollbar-color: #3f3f46 transparent; /* zinc-700 */
+            scrollbar-color: #3f3f46 transparent;
         }
-
-        /* WebKit (Chrome, Edge, Safari) Support */
         ::-webkit-scrollbar {
-            width: 8px;  /* Vertical scrollbar width */
-            height: 8px; /* Horizontal scrollbar height */
+            width: 8px; 
+            height: 8px; 
         }
-
-        /* The track (background) */
         ::-webkit-scrollbar-track {
             background: transparent; 
         }
-
-        /* The draggable thumb */
         ::-webkit-scrollbar-thumb {
-            background-color: #d1d5db; /* Tailwind gray-300 */
+            background-color: #d1d5db; 
             border-radius: 20px;
             border: 2px solid transparent;
             background-clip: content-box;
         }
-
-        /* Thumb hover state (Brand Pink!) */
         ::-webkit-scrollbar-thumb:hover {
-            background-color: #db2777; /* Tailwind pink-600 */
+            background-color: #db2777; 
         }
-
-        /* Dark Mode overrides for the thumb */
         .dark ::-webkit-scrollbar-thumb {
-            background-color: #3f3f46; /* Tailwind zinc-700 */
+            background-color: #3f3f46; 
         }
-        
         .dark ::-webkit-scrollbar-thumb:hover {
-            background-color: #db2777; /* Tailwind pink-600 */
+            background-color: #db2777; 
         }
     </style>
 
@@ -177,92 +143,74 @@ $current_page = basename($_SERVER['PHP_SELF']);
         
         <div class="h-16 flex items-center justify-between px-6 shrink-0 border-b border-zinc-800 dark:border-zinc-900 relative overflow-hidden">
             <div class="absolute left-0 top-0 w-32 h-32 bg-pink-600/10 rounded-full blur-2xl pointer-events-none"></div>
-            
             <div class="flex items-baseline gap-2 relative z-10">
                 <span class="text-pink-600 font-serif italic text-3xl leading-none">NC</span>
                 <span class="text-lg font-extrabold tracking-[0.15em] uppercase">Garments</span>
             </div>
-
             <button onclick="toggleSidebar()" class="md:hidden text-zinc-400 hover:text-white focus:outline-none relative z-10">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
         
         <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-            
             <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-2">Main Menu</p>
             
             <a href="index.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'index.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-house w-5 text-center transition-colors <?php echo ($current_page == 'index.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Dashboard</span>
             </a>
-
             <a href="pos.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'pos.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-cash-register w-5 text-center transition-colors <?php echo ($current_page == 'pos.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Point of Sale</span>
             </a>
-
             <a href="projects.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'projects.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-scissors w-5 text-center transition-colors <?php echo ($current_page == 'projects.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Orders & Projects</span>
             </a>
-
             <a href="inventory.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'inventory.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-boxes-stacked w-5 text-center transition-colors <?php echo ($current_page == 'inventory.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Inventory</span>
             </a>
-
             <a href="customers.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'customers.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-users w-5 text-center transition-colors <?php echo ($current_page == 'customers.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Customers & Payments</span>
             </a>
             
             <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-6">Analytics</p>
-
             <a href="reports.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'reports.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-chart-pie w-5 text-center transition-colors <?php echo ($current_page == 'reports.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Financial Reports</span>
             </a>
 
             <p class="px-3 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 mt-6">Administration</p>
-
             <a href="staff.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'staff.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-shield-halved w-5 text-center transition-colors <?php echo ($current_page == 'staff.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Staff Access</span>
             </a>
-            
             <a href="system_activity.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'system_activity.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-clock-rotate-left w-5 text-center transition-colors <?php echo ($current_page == 'system_activity.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">System Activity</span>
             </a>
-            
             <a href="backup.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'backup.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
                 <i class="fa-solid fa-database w-5 text-center transition-colors <?php echo ($current_page == 'backup.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
                 <span class="font-bold text-sm tracking-wide">Backup</span>
             </a>
-            
         </nav>
         
-        <div class="p-4 mt-auto shrink-0 border-t border-zinc-800 dark:border-zinc-900">
-            <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group <?php echo ($current_page == 'settings.php') ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'; ?>">
-                <i class="fa-solid fa-gear w-5 text-center transition-colors <?php echo ($current_page == 'settings.php') ? 'text-white' : 'text-zinc-500 group-hover:text-pink-400'; ?>"></i>
-                <span class="font-bold text-sm tracking-wide">Settings</span>
-            </a>
-        </div>
-    </aside>
+        </aside>
 
     <div class="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-zinc-950 transition-colors duration-500">
         
         <header class="h-16 bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between px-4 md:px-8 shrink-0 transition-colors duration-500 z-10 shadow-sm shadow-gray-100/50 dark:shadow-none">
             
-            <div class="flex items-center flex-1 max-w-lg">
+            <div class="flex items-center flex-1 max-w-lg relative">
                 <button onclick="toggleSidebar()" class="md:hidden mr-4 text-gray-500 hover:text-pink-600 focus:outline-none transition-colors">
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
 
                 <div class="relative group flex-1 hidden sm:block">
                     <i class="fa-solid fa-search absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors"></i>
-                    <input type="text" placeholder="Search orders, customers..." 
+                    <input type="text" placeholder="Search orders, customers, inventory..." autocomplete="off"
                            class="w-full pl-8 pr-4 py-2 bg-transparent border-none text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-0 transition-colors">
                 </div>
             </div>
@@ -270,12 +218,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <div class="flex items-center gap-4 md:gap-6">
                 
                 <div class="hidden lg:flex flex-col text-right justify-center">
-                    <span id="live-time" class="text-sm font-extrabold text-gray-900 dark:text-white tracking-widest leading-none mb-0.5">
-                        --:--:--
-                    </span>
-                    <span id="live-date" class="text-[9px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest leading-none">
-                        ----, --- --, ----
-                    </span>
+                    <span id="live-time" class="text-sm font-extrabold text-gray-900 dark:text-white tracking-widest leading-none mb-0.5">--:--:--</span>
+                    <span id="live-date" class="text-[9px] font-bold text-pink-600 dark:text-pink-500 uppercase tracking-widest leading-none">----, --- --, ----</span>
                 </div>
                 
                 <div class="hidden lg:block h-6 w-px bg-gray-200 dark:bg-zinc-800 mx-1"></div>
@@ -287,9 +231,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="relative">
                     <button onclick="toggleNotifications()" class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
                         <i class="fa-regular fa-bell text-xl"></i>
-                        
                         <?php if ($notif_count > 0): ?>
-                            <span class="absolute -top-2 -right-3 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-pink-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-zinc-900">
+                            <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pink-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-zinc-900">
                                 <?= $notif_count > 9 ? '9+' : $notif_count ?>
                             </span>
                         <?php endif; ?>
@@ -368,15 +311,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </div>
                 
                         <div class="py-1">
-                            <a href="profile.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
-                                <i class="fa-regular fa-id-badge w-4 text-center"></i> My Profile
+                            <a href="settings.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
+                                <i class="fa-solid fa-gear w-4 text-center"></i> Settings
                             </a>
-                            <a href="history.php?user=me" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
-                                <i class="fa-solid fa-clock-rotate-left w-4 text-center"></i> My Activity Log
-                            </a>
-                            <a href="manual.pdf" target="_blank" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors">
-                                <i class="fa-regular fa-circle-question w-4 text-center"></i> User Manual
-                            </a>
+                            <button onclick="openManualModal()" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-pink-600 dark:hover:text-pink-500 transition-colors text-left focus:outline-none">
+                                <i class="fa-solid fa-circle-question w-4 text-center"></i> User Manual
+                            </button>
                         </div>
                 
                         <div class="py-1 border-t border-gray-50 dark:border-zinc-800/50 bg-gray-50/50 dark:bg-zinc-950/50">
@@ -389,13 +329,32 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </div>
         </header>
 
+        <div id="manual-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeManualModal()"></div>
+            <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-book-open text-pink-600 mr-2"></i> System User Manual</h3>
+                    <div class="flex gap-3">
+                        <a href="manual.pdf" target="_blank" class="text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 dark:bg-pink-500/10 dark:hover:bg-pink-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+                        </a>
+                        <button onclick="closeManualModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none ml-2">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0 bg-gray-100 dark:bg-black h-[75vh]">
+                    <iframe src="manual.pdf" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </div>
+
         <script>
-            // 🚨 NEW: Notification Toggling Logic
+            // 🚨 SCRIPT RE-WRITTEN WITH NO VARIABLE COLLISIONS
             function toggleNotifications() {
                 const dropdown = document.getElementById('notif-dropdown');
                 dropdown.classList.toggle('hidden');
                 
-                // Close user dropdown if open
                 const userDropdown = document.getElementById('user-dropdown');
                 const arrow = document.getElementById('user-menu-arrow');
                 if (userDropdown) userDropdown.classList.add('hidden');
@@ -408,12 +367,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 dropdown.classList.toggle('hidden');
                 arrow.classList.toggle('rotate-180');
                 
-                // Close notif dropdown if open
                 const notifDropdown = document.getElementById('notif-dropdown');
                 if (notifDropdown) notifDropdown.classList.add('hidden');
             }
+            
+            function openManualModal() {
+                document.getElementById('manual-modal').classList.remove('hidden');
+                // Auto-close the user menu when opening the modal
+                document.getElementById('user-dropdown').classList.add('hidden');
+                document.getElementById('user-menu-arrow').classList.remove('rotate-180');
+            }
+            
+            function closeManualModal() {
+                document.getElementById('manual-modal').classList.add('hidden');
+            }
 
-            // Close all dropdowns when clicking outside
             window.addEventListener('click', function(e) {
                 if (!e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown')) {
                     const userDropdown = document.getElementById('user-dropdown');
@@ -430,35 +398,23 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
             function updateLiveClock() {
                 const now = new Date();
-                
-                // Format Time (e.g., 02:45:12 PM)
                 let hours = now.getHours();
                 let minutes = now.getMinutes();
                 let seconds = now.getSeconds();
                 let ampm = hours >= 12 ? 'PM' : 'AM';
                 
                 hours = hours % 12;
-                hours = hours ? hours : 12; // the hour '0' should be '12'
+                hours = hours ? hours : 12;
                 
-                // Add leading zeros
                 hours = hours < 10 ? '0' + hours : hours;
                 minutes = minutes < 10 ? '0' + minutes : minutes;
                 seconds = seconds < 10 ? '0' + seconds : seconds;
                 
                 const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-                
-                // Format Date (e.g., Friday, Apr 17, 2026)
                 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                
-                const dayName = days[now.getDay()];
-                const monthName = months[now.getMonth()];
-                const dateNum = now.getDate();
-                const year = now.getFullYear();
-                
-                const dateString = dayName + ', ' + monthName + ' ' + dateNum + ', ' + year;
+                const dateString = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
 
-                // Update the HTML
                 const timeEl = document.getElementById('live-time');
                 const dateEl = document.getElementById('live-date');
                 
@@ -468,7 +424,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 }
             }
 
-            // Run immediately, then update every second
             updateLiveClock();
             setInterval(updateLiveClock, 1000);
         </script>
