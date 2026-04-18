@@ -105,8 +105,8 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col transition-colors duration-500">
-        <div class="overflow-x-auto flex-1">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
+        <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
                     <tr>
@@ -119,7 +119,7 @@ include 'includes/header.php';
 
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Unit Price/Cost</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Status</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
+                        <th class="px-6 py-4 text-center text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="inventory-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
@@ -127,10 +127,11 @@ include 'includes/header.php';
                     <?php
                     if ($items_result->num_rows === 0) {
                         $colspan = ($base_type === 'raw_material') ? 6 : 5;
-                        echo '<tr id="php-empty-state"><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500">No items found in this category.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500 font-medium">No items found in this category.</td></tr>';
                     }
 
                     while ($item = $items_result->fetch_assoc()) {
+                        
                         $stock_val = (float)$item['stock'];
                         $alert_val = (float)$item['alert'];
                         
@@ -173,7 +174,6 @@ include 'includes/header.php';
                             }
                         }
                         
-                        // Added 'inventory-row' class for JS targeting
                         echo '
                         <tr class="inventory-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_bg . '">
                             <td class="px-6 py-4">
@@ -226,22 +226,40 @@ include 'includes/header.php';
                                           </span>';
                                 }
                         echo '</td>
-                            <td class="px-6 py-4 text-right text-sm font-medium">';
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center gap-1.5">';
                                 
                                 if ($is_archived_view) {
-                                    echo '<button onclick="restoreItem('.$item['id'].', \''.$base_type.'\')" class="text-gray-400 hover:text-emerald-600 focus:outline-none p-2" title="Restore Item">
-                                            <i class="fa-solid fa-clock-rotate-left"></i>
+                                    echo '<button onclick="restoreItem('.$item['id'].', \''.$base_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
+                                              
+                                              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                  Restore Item
+                                                  <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                              </span>
                                           </button>';
                                 } else {
-                                    echo '<button onclick="openInventoryModal('.$item['id'].', \''.$base_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="text-gray-400 hover:text-pink-600 focus:outline-none p-2" title="Edit Item">
-                                            <i class="fa-solid fa-pen"></i>
+                                    echo '<button onclick="openInventoryModal('.$item['id'].', \''.$base_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                              
+                                              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                  Edit Item
+                                                  <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                              </span>
                                           </button>
-                                          <button onclick="archiveItem('.$item['id'].', \''.$base_type.'\')" class="text-gray-400 hover:text-rose-600 focus:outline-none p-2" title="Archive Item">
-                                            <i class="fa-solid fa-box-archive"></i>
+                                          
+                                          <button onclick="archiveItem('.$item['id'].', \''.$base_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-box-archive transition-colors"></i>
+                                              
+                                              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                  Archive Item
+                                                  <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                              </span>
                                           </button>';
                                 }
 
-                        echo '</td>
+                        echo '  </div>
+                            </td>
                         </tr>';
                     }
                     ?>
@@ -251,6 +269,40 @@ include 'includes/header.php';
         
         <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
+    
+    <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="global-confirm-backdrop"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-confirm-box">
+            <div class="p-6 text-center">
+                <div id="global-confirm-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border">
+                    <i id="global-confirm-icon" class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="global-confirm-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Are you sure?</h3>
+                <p id="global-confirm-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center gap-3">
+                <button id="global-confirm-cancel" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">Cancel</button>
+                <button id="global-confirm-ok" class="text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-alert-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+            <div class="p-6 text-center">
+                <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-pink-200 dark:border-pink-500/30">
+                    <i id="global-alert-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Notice</h3>
+                <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+                <button onclick="closeGlobalAlert()" class="bg-pink-600 hover:bg-pink-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 focus:outline-none transition-all w-full">Got it</button>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <div id="inventory-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -334,6 +386,113 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // ==========================================
+    // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
+    // ==========================================
+    
+    function customAlert(message, title = "Notice", type = "info") {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        const msgEl = document.getElementById('global-alert-msg');
+        const titleEl = document.getElementById('global-alert-title');
+        const iconWrapper = document.getElementById('global-alert-icon-wrapper');
+        const icon = document.getElementById('global-alert-icon');
+
+        msgEl.textContent = message;
+        titleEl.textContent = title;
+
+        // Theme the alert based on type
+        iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+        if (type === "error") {
+            iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+            icon.className = "fa-solid fa-circle-xmark";
+        } else if (type === "success") {
+            iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+            icon.className = "fa-solid fa-circle-check";
+        } else {
+            iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
+            icon.className = "fa-solid fa-circle-info";
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeGlobalAlert() {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        box.classList.remove('scale-100', 'opacity-100');
+        box.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    // A Promise-based confirm dialog
+    function customConfirm(message, title = "Are you sure?", confirmBtnText = "Confirm", type = "warning") {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('global-confirm-modal');
+            const box = document.getElementById('global-confirm-box');
+            const msgEl = document.getElementById('global-confirm-msg');
+            const titleEl = document.getElementById('global-confirm-title');
+            const btnOk = document.getElementById('global-confirm-ok');
+            const btnCancel = document.getElementById('global-confirm-cancel');
+            const backdrop = document.getElementById('global-confirm-backdrop');
+            const iconWrapper = document.getElementById('global-confirm-icon-wrapper');
+            const icon = document.getElementById('global-confirm-icon');
+
+            msgEl.textContent = message;
+            titleEl.textContent = title;
+            btnOk.textContent = confirmBtnText;
+
+            // Theme the confirm dialog
+            iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+            btnOk.className = "text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 ";
+            
+            if (type === "danger") {
+                iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+                icon.className = "fa-solid fa-trash";
+                btnOk.className += "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20";
+            } else if (type === "info") {
+                iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+                icon.className = "fa-solid fa-clock-rotate-left";
+                btnOk.className += "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20";
+            } else {
+                iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const cleanupAndResolve = (result) => {
+                box.classList.remove('scale-100', 'opacity-100');
+                box.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+                
+                btnOk.removeEventListener('click', onOk);
+                btnCancel.removeEventListener('click', onCancel);
+                backdrop.removeEventListener('click', onCancel);
+                
+                resolve(result);
+            };
+
+            const onOk = () => cleanupAndResolve(true);
+            const onCancel = () => cleanupAndResolve(false);
+
+            btnOk.addEventListener('click', onOk);
+            btnCancel.addEventListener('click', onCancel);
+            backdrop.addEventListener('click', onCancel);
+        });
+    }
+
+    window.alert = customAlert;
+
     // --- Pagination & Search Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('inventory-tbody');
@@ -348,13 +507,11 @@ include 'includes/header.php';
     function updateTable() {
         const searchTerm = searchInput.value.toLowerCase();
         
-        // Filter rows based on search term
         const filteredRows = allRows.filter(row => {
             const text = row.innerText.toLowerCase();
             return text.includes(searchTerm);
         });
 
-        // Calculate pagination based on filtered results
         const totalItems = filteredRows.length;
         const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
         
@@ -363,15 +520,12 @@ include 'includes/header.php';
         const startIndex = (currentPage - 1) * rowsPerPage;
         const endIndex = startIndex + rowsPerPage;
 
-        // Hide all rows initially
         allRows.forEach(row => row.style.display = 'none');
 
-        // Show only the 15 rows for the current page
         filteredRows.slice(startIndex, endIndex).forEach(row => {
             row.style.display = '';
         });
 
-        // Handle Empty States
         const existingEmptyRow = document.getElementById('js-empty-state');
         if (totalItems === 0) {
             if (!existingEmptyRow) {
@@ -383,7 +537,6 @@ include 'includes/header.php';
             if (existingEmptyRow) existingEmptyRow.style.display = 'none';
         }
 
-        // Hide PHP's default empty state if we are doing JS rendering
         const phpEmpty = document.getElementById('php-empty-state');
         if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
 
@@ -405,7 +558,6 @@ include 'includes/header.php';
                     <button onclick="changePage(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
         `;
 
-        // Generate Page Numbers
         for (let i = 1; i <= totalPages; i++) {
             if (totalPages > 7) {
                  if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
@@ -438,13 +590,11 @@ include 'includes/header.php';
         updateTable();
     }
 
-    // Trigger instantly as the user types
     searchInput.addEventListener('input', () => {
         currentPage = 1; 
         updateTable();
     });
 
-    // Run once on initial load
     updateTable();
 
 
@@ -507,8 +657,8 @@ include 'includes/header.php';
             size: document.getElementById('inv_size').value
         };
 
-        if(!payload.sku) return alert("SKU is required!");
-        if(!payload.name) return alert("Item Name is required!");
+        if(!payload.sku) return customAlert("SKU is required!", "Missing Data", "error");
+        if(!payload.name) return customAlert("Item Name is required!", "Missing Data", "error");
 
         try {
             const res = await fetch('actions/save_inventory.php', {
@@ -516,15 +666,18 @@ include 'includes/header.php';
             });
             const data = await res.json();
             if(data.status === 'success') {
-                window.location.href = `?view=${type}`;
+                customAlert("Item saved successfully!", "Success", "success");
+                setTimeout(() => window.location.href = `?view=${type}`, 1500);
             } else {
-                alert("Error: " + data.message);
+                customAlert("Error: " + data.message, "Error", "error");
             }
-        } catch (e) { alert("Network Error"); }
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 
     async function archiveItem(id, type) {
-        if(!confirm("Are you sure you want to archive this item? It will be hidden from active inventory.")) return;
+        const isConfirmed = await customConfirm("Are you sure you want to archive this item? It will be hidden from active inventory.", "Archive Item");
+        if(!isConfirmed) return;
+        
         try {
             const res = await fetch('actions/delete_inventory.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -532,11 +685,14 @@ include 'includes/header.php';
             });
             const data = await res.json();
             if(data.status === 'success') window.location.reload();
-        } catch (e) { alert("Network Error"); }
+            else customAlert(data.message, "Error", "error");
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 
     async function restoreItem(id, type) {
-        if(!confirm("Restore this item back to active inventory?")) return;
+        const isConfirmed = await customConfirm("Restore this item back to active inventory?", "Restore Item", "Yes, Restore", "info");
+        if(!isConfirmed) return;
+        
         try {
             const res = await fetch('actions/restore_inventory.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -544,7 +700,8 @@ include 'includes/header.php';
             });
             const data = await res.json();
             if(data.status === 'success') window.location.reload();
-        } catch (e) { alert("Network Error"); }
+            else customAlert(data.message, "Error", "error");
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 </script>
 

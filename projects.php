@@ -161,7 +161,7 @@ include 'includes/header.php';
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest w-56">Current Progress</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Timeline & Dates</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Financials</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
+                        <th class="px-6 py-4 text-center text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 
@@ -245,37 +245,67 @@ include 'includes/header.php';
                                     <div class="text-[11px] font-bold ' . $profit_color . ' tracking-wide mt-0.5 uppercase">Est. Profit: ₱ ' . number_format($est_profit, 2) . '</div>
                                 </td>
                                 
-                                <td class="px-6 py-4 text-right text-sm font-medium">
-                                    <div class="flex flex-col gap-2 items-end">';
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center justify-center gap-2">';
                                     
+                                    // NOTES BUTTON
                                     if ($time['is_overdue'] || !empty($project['overdue_notes'])) {
-                                        $note_icon = empty($project['overdue_notes']) ? 'fa-regular fa-comment' : 'fa-solid fa-comment text-amber-500';
-                                        echo '<button onclick="event.stopPropagation(); openNotesModal('.$project['project_id'].', \''.addslashes($project['overdue_notes'] ?? '').'\')" class="text-gray-500 hover:text-amber-500 text-xs font-bold transition-colors focus:outline-none bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded border border-gray-200 dark:border-zinc-700 shadow-sm">
-                                                <i class="'.$note_icon.' mr-1"></i> Notes
+                                        $note_icon = empty($project['overdue_notes']) ? 'fa-regular fa-comment' : 'fa-solid fa-comment';
+                                        $btn_border = empty($project['overdue_notes']) ? 'border-gray-200 dark:border-zinc-700 text-gray-400 hover:border-amber-300 hover:text-amber-500' : 'border-amber-200 dark:border-amber-500/50 text-amber-500';
+                                        
+                                        echo '<button onclick="event.stopPropagation(); openNotesModal('.$project['project_id'].', \''.addslashes($project['overdue_notes'] ?? '').'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border '.$btn_border.' rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                                <i class="'.$note_icon.' transition-colors"></i>
+                                                
+                                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                    Project Notes
+                                                    <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                                </span>
                                               </button>';
                                     }
 
-                                    echo '<div class="flex items-center mt-1">
-                                            <button onclick="event.stopPropagation(); viewProjectDetails(' . $project['project_id'] . ')" class="text-gray-400 hover:text-blue-500 transition-colors focus:outline-none p-2 mr-1" title="View/Edit Details">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </button>
-                                            <button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ', ' . $is_internal_js . ')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 hover:border-pink-200 px-3 py-1.5 rounded-lg transition-all mr-2 text-xs font-bold shadow-sm focus:outline-none">
-                                                <i class="fa-solid fa-file-invoice-dollar mr-1"></i> Costing
-                                            </button>';
+                                    // EDIT BUTTON
+                                    echo '<button onclick="event.stopPropagation(); viewProjectDetails(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                            <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                            
+                                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                Edit Details
+                                                <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                            </span>
+                                        </button>';
+                                            
+                                    // COSTING BUTTON
+                                    echo '<button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ', ' . $is_internal_js . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-pink-300 text-gray-400 hover:text-pink-600 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                            <i class="fa-solid fa-file-invoice-dollar transition-colors"></i>
+                                            
+                                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                Costing
+                                                <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                            </span>
+                                        </button>';
 
+                                    // ARCHIVE / RESTORE BUTTON
                                     if ($view_archived === 0) {
-                                        echo '<button onclick="event.stopPropagation(); archiveProject(' . $project['project_id'] . ')" class="text-gray-400 hover:text-amber-500 transition-colors focus:outline-none p-2" title="Archive Project">
-                                                  <i class="fa-solid fa-box-archive"></i>
+                                        echo '<button onclick="event.stopPropagation(); archiveProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                                  <i class="fa-solid fa-box-archive transition-colors"></i>
+                                                  
+                                                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                      Archive
+                                                      <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                                  </span>
                                               </button>';
                                     } else {
-                                        echo '<button onclick="event.stopPropagation(); restoreProject(' . $project['project_id'] . ')" class="text-gray-400 hover:text-emerald-500 transition-colors focus:outline-none p-2" title="Restore Project">
-                                                  <i class="fa-solid fa-clock-rotate-left"></i>
+                                        echo '<button onclick="event.stopPropagation(); restoreProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                                  <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
+                                                  
+                                                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                      Restore
+                                                      <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                                  </span>
                                               </button>';
                                     }
 
-                                    echo '   </div>
-                                        </div>
-                                    </td>
+                                    echo '  </div>
+                                        </td>
                             </tr>
                         ';
                     }
