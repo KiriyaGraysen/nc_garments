@@ -46,7 +46,7 @@ $today_sales = $today_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 include 'includes/header.php'; 
 ?>
 
-<main class="flex-1 p-4 md:p-6 overflow-y-auto font-sans relative bg-gray-50 dark:bg-zinc-950">
+<main class="flex-1 p-4 md:p-8 overflow-y-auto font-sans relative bg-gray-50 dark:bg-zinc-950">
     
     <div class="mb-4">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Point of Sale</h2>

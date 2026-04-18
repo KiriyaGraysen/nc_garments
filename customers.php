@@ -150,7 +150,7 @@ include 'includes/header.php';
                         $balance = $cust['total_billed'] - $cust['total_paid'];
                         
                         $badge_class = $balance > 0 ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20';
-                        $badge_text = $balance > 0 ? 'With Balance' : 'Cleared';
+                        $badge_text = $balance > 0 ? 'With Balance' : 'Fully Paid';
                         
                         $latest_date = $cust['latest_payment_date'] ? date('M d, Y', strtotime($cust['latest_payment_date'])) : 'No Payments Yet';
 
