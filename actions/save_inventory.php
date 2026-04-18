@@ -8,7 +8,7 @@ if ($data) {
     $id = !empty($data['item_id']) ? (int)$data['item_id'] : null;
     $sku = trim($data['sku']);
     $name = trim($data['name']);
-    $stock = (int)$data['stock'];
+    $stock = (int)$data['stock']; // Still needed for CREATE mode
     $price = (float)$data['price'];
     $alert = (int)$data['alert'];
 
@@ -28,24 +28,24 @@ if ($data) {
             // 1. Fetch "Before" Snapshot
             if ($type === 'raw_material') {
                 $uom = trim($data['uom']);
-                $old_stmt = $conn->prepare("SELECT sku, material_name as name, current_stock as stock, unit_of_measure as variant, current_price as price, min_stock_alert as alert FROM raw_material WHERE material_id=?");
+                $old_stmt = $conn->prepare("SELECT sku, material_name as name, unit_of_measure as variant, current_price as price, min_stock_alert as alert FROM raw_material WHERE material_id=?");
             } else {
                 $size = trim($data['size']);
-                $old_stmt = $conn->prepare("SELECT sku, product_name as name, current_stock as stock, size as variant, selling_price as price, min_stock_alert as alert FROM premade_product WHERE product_id=?");
+                $old_stmt = $conn->prepare("SELECT sku, product_name as name, size as variant, selling_price as price, min_stock_alert as alert FROM premade_product WHERE product_id=?");
             }
             
             $old_stmt->bind_param("i", $id);
             $old_stmt->execute();
             $old_data = $old_stmt->get_result()->fetch_assoc();
 
-            // 2. Execute Update
+            // 2. Execute Update (🚨 STOCK IS NOT UPDATED HERE)
             if ($type === 'raw_material') {
                 // Smart Update: Shifts current_price to last_price automatically!
-                $stmt = $conn->prepare("UPDATE raw_material SET sku=?, material_name=?, current_stock=?, unit_of_measure=?, last_price=current_price, current_price=?, min_stock_alert=? WHERE material_id=?");
-                $stmt->bind_param("ssisdii", $sku, $name, $stock, $uom, $price, $alert, $id);
+                $stmt = $conn->prepare("UPDATE raw_material SET sku=?, material_name=?, unit_of_measure=?, last_price=current_price, current_price=?, min_stock_alert=? WHERE material_id=?");
+                $stmt->bind_param("sssdii", $sku, $name, $uom, $price, $alert, $id);
             } else {
-                $stmt = $conn->prepare("UPDATE premade_product SET sku=?, product_name=?, current_stock=?, size=?, selling_price=?, min_stock_alert=? WHERE product_id=?");
-                $stmt->bind_param("ssisdii", $sku, $name, $stock, $size, $price, $alert, $id);
+                $stmt = $conn->prepare("UPDATE premade_product SET sku=?, product_name=?, size=?, selling_price=?, min_stock_alert=? WHERE product_id=?");
+                $stmt->bind_param("sssdii", $sku, $name, $size, $price, $alert, $id);
             }
             $stmt->execute();
 
@@ -55,7 +55,6 @@ if ($data) {
                 
                 if ($old_data['sku'] !== $sku) $changes[] = ['field' => 'SKU', 'old' => $old_data['sku'], 'new' => $sku];
                 if ($old_data['name'] !== $name) $changes[] = ['field' => 'Item Name', 'old' => $old_data['name'], 'new' => $name];
-                if ((int)$old_data['stock'] !== $stock) $changes[] = ['field' => 'Stock Quantity', 'old' => $old_data['stock'], 'new' => $stock];
                 if ((float)$old_data['price'] !== $price) $changes[] = ['field' => 'Price / Cost', 'old' => '₱ ' . number_format($old_data['price'], 2), 'new' => '₱ ' . number_format($price, 2)];
                 if ((int)$old_data['alert'] !== $alert) $changes[] = ['field' => 'Alert Threshold', 'old' => $old_data['alert'], 'new' => $alert];
                 

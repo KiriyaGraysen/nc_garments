@@ -15,7 +15,6 @@ $is_archived_view = ($view === 'archived');
 // 2. Setup Sorting Logic
 $sort = $_GET['sort'] ?? 'name_asc';
 
-// Use standardized aliases for the unified query
 switch ($sort) {
     case 'name_desc': $order_by = "name DESC"; break;
     case 'stock_asc': $order_by = "stock ASC"; break;
@@ -25,7 +24,7 @@ switch ($sort) {
     default: $order_by = "name ASC"; break; // Default
 }
 
-// 3. Define the base queries to ensure columns match perfectly for UNION
+// 3. Define the base queries
 $query_raw = "SELECT material_id as id, sku, material_name as name, current_stock as stock, unit_of_measure as metric, current_price as price, min_stock_alert as alert, 'raw_material' as type FROM raw_material";
 $query_prod = "SELECT product_id as id, sku, product_name as name, current_stock as stock, size as metric, selling_price as price, min_stock_alert as alert, 'premade_product' as type FROM premade_product";
 
@@ -35,7 +34,6 @@ if ($view === 'raw_material') {
 } elseif ($view === 'premade_product') {
     $stmt = $conn->prepare("$query_prod WHERE is_archived = 0 ORDER BY $order_by");
 } elseif ($view === 'alerts') {
-    // 🚨 UNIFIED ALERTS: Stitch both tables together where stock is low
     $stmt = $conn->prepare("
         SELECT * FROM (
             $query_raw WHERE is_archived = 0 AND current_stock <= min_stock_alert
@@ -44,7 +42,6 @@ if ($view === 'raw_material') {
         ) as combined ORDER BY $order_by
     ");
 } elseif ($view === 'archived') {
-    // 🗃️ UNIFIED ARCHIVE: Stitch both tables together where archived
     $stmt = $conn->prepare("
         SELECT * FROM (
             $query_raw WHERE is_archived = 1
@@ -200,7 +197,6 @@ include 'includes/header.php';
                                 <div class="text-xs font-bold tracking-wider text-gray-400 mt-1">SKU: '.htmlspecialchars($item['sku']).'</div>
                             </td>';
 
-                            // Unified Column: Category Badge
                             if ($is_unified) {
                                 $cat_bg = $item['type'] === 'raw_material' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
                                 $cat_label = $item['type'] === 'raw_material' ? 'Material' : 'Product';
@@ -265,25 +261,31 @@ include 'includes/header.php';
                                 if ($is_archived_view) {
                                     echo '<button onclick="restoreItem('.$item['id'].', \''.$safe_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                               <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
-                                              
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
                                                   Restore Item
                                                   <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
                                               </span>
                                           </button>';
                                 } else {
-                                    echo '<button onclick="openInventoryModal('.$item['id'].', \''.$safe_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                              <i class="fa-solid fa-pen-to-square transition-colors"></i>
-                                              
+                                    // 🚨 NEW: Adjust Stock Button
+                                    echo '<button onclick="openAdjustModal('.$item['id'].', \''.$safe_type.'\', \''.$safe_name.'\', '.$item['stock'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 text-gray-400 hover:text-purple-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-plus-minus transition-colors"></i>
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                                  Edit Item
+                                                  Adjust Stock
+                                                  <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                              </span>
+                                          </button>
+
+                                          <button onclick="openInventoryModal('.$item['id'].', \''.$safe_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                  Edit Details
                                                   <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
                                               </span>
                                           </button>
                                           
                                           <button onclick="archiveItem('.$item['id'].', \''.$safe_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                               <i class="fa-solid fa-box-archive transition-colors"></i>
-                                              
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
                                                   Archive Item
                                                   <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
@@ -338,6 +340,63 @@ include 'includes/header.php';
 
 </main>
 
+<div id="adjust-stock-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeAdjustModal()"></div>
+    
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Adjust Stock Level</h3>
+                <p id="adj_item_name" class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mt-1">Item Name</p>
+            </div>
+            <button onclick="closeAdjustModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <form id="adjust-stock-form" class="space-y-5">
+                <input type="hidden" id="adj_id">
+                <input type="hidden" id="adj_type">
+                
+                <div class="flex justify-between items-center bg-gray-50 dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Stock:</span>
+                    <span id="adj_current_stock" class="text-lg font-black text-gray-900 dark:text-white">0</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Action Type</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-500/10 transition-all">
+                            <input type="radio" name="adj_action" value="add" class="sr-only" checked>
+                            <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 text-center w-full"><i class="fa-solid fa-plus mr-1"></i> Add Stock</div>
+                        </label>
+                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50 dark:has-[:checked]:bg-rose-500/10 transition-all">
+                            <input type="radio" name="adj_action" value="deduct" class="sr-only">
+                            <div class="text-sm font-bold text-rose-600 dark:text-rose-400 text-center w-full"><i class="fa-solid fa-minus mr-1"></i> Deduct Stock</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Quantity to Adjust</label>
+                    <input type="number" step="0.01" min="0.01" id="adj_qty" required placeholder="0.00" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-sm font-bold">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Reason / Remarks (Required)</label>
+                    <textarea id="adj_reason" rows="3" required placeholder="e.g., Spoiled fabric during tailoring, found extra stock..." class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-sm font-medium"></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
+            <button type="button" onclick="closeAdjustModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
+            <button type="button" onclick="saveAdjustment()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-purple-600/20 focus:outline-none">Submit Adjustment</button>
+        </div>
+    </div>
+</div>
+
 <div id="inventory-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeInventoryModal()"></div>
     
@@ -357,11 +416,11 @@ include 'includes/header.php';
                 <div>
                     <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Item Type</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-pink-600 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/10 transition-all">
+                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/10 transition-all">
                             <input type="radio" name="inv_type" value="raw_material" class="sr-only" onchange="toggleItemTypeFields()" checked>
                             <div class="text-sm font-bold text-gray-900 dark:text-white text-center w-full">Raw Material</div>
                         </label>
-                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-pink-600 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/10 transition-all">
+                        <label class="relative flex cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm focus:outline-none has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/10 transition-all">
                             <input type="radio" name="inv_type" value="premade_product" class="sr-only" onchange="toggleItemTypeFields()">
                             <div class="text-sm font-bold text-gray-900 dark:text-white text-center w-full">Premade Product</div>
                         </label>
@@ -371,37 +430,38 @@ include 'includes/header.php';
                 <div class="grid grid-cols-3 gap-4">
                     <div class="col-span-1">
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">SKU</label>
-                        <input type="text" id="inv_sku" required placeholder="RAW-001" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-bold placeholder-gray-400 dark:placeholder-zinc-600">
+                        <input type="text" id="inv_sku" required placeholder="RAW-001" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-bold placeholder-gray-400 dark:placeholder-zinc-600">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Item Name</label>
-                        <input type="text" id="inv_name" required placeholder="e.g., Signature Pink Thread" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
+                        <input type="text" id="inv_name" required placeholder="e.g., Signature Pink Thread" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Current Stock / Deficit</label>
-                        <input type="number" step="0.01" id="inv_stock" value="0.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Current Stock</label>
+                        <input type="number" step="0.01" id="inv_stock" value="0.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <p id="inv_stock_hint" class="hidden text-[9px] text-gray-400 font-medium mt-1">Use the adjust button to modify.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Price / Cost (₱)</label>
-                        <input type="number" id="inv_price" step="0.01" min="0" value="0.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <input type="number" id="inv_price" step="0.01" min="0" value="0.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div id="field_uom">
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Unit of Measure</label>
-                        <input type="text" id="inv_uom" placeholder="e.g., Yards, Cones" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
+                        <input type="text" id="inv_uom" placeholder="e.g., Yards, Cones" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                     </div>
                     <div id="field_size" class="hidden">
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Clothing Size</label>
-                        <input type="text" id="inv_size" placeholder="e.g., Small, XL" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
+                        <input type="text" id="inv_size" placeholder="e.g., Small, XL" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium placeholder-gray-400 dark:placeholder-zinc-600">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Low Stock Alert</label>
-                        <input type="number" step="0.01" id="inv_alert" min="0" value="10.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-sm font-medium">
+                        <input type="number" step="0.01" id="inv_alert" min="0" value="10.00" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm font-medium">
                     </div>
                 </div>
             </form>
@@ -411,8 +471,8 @@ include 'includes/header.php';
             <button type="button" onclick="closeInventoryModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">
                 Cancel
             </button>
-            <button type="button" onclick="saveInventory()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-pink-600/20 focus:outline-none">
-                Save Item
+            <button type="button" onclick="saveInventory()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-600/20 focus:outline-none">
+                Save Details
             </button>
         </div>
     </div>
@@ -420,7 +480,7 @@ include 'includes/header.php';
 
 <script>
     // ==========================================
-    // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
+    // 0. GLOBAL UI OVERRIDES
     // ==========================================
     
     function customAlert(message, title = "Notice", type = "info") {
@@ -434,7 +494,6 @@ include 'includes/header.php';
         msgEl.textContent = message;
         titleEl.textContent = title;
 
-        // Theme the alert based on type
         iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
         if (type === "error") {
             iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
@@ -462,7 +521,6 @@ include 'includes/header.php';
         setTimeout(() => modal.classList.add('hidden'), 200);
     }
 
-    // A Promise-based confirm dialog
     function customConfirm(message, title = "Are you sure?", confirmBtnText = "Confirm", type = "warning") {
         return new Promise((resolve) => {
             const modal = document.getElementById('global-confirm-modal');
@@ -479,7 +537,6 @@ include 'includes/header.php';
             titleEl.textContent = title;
             btnOk.textContent = confirmBtnText;
 
-            // Theme the confirm dialog
             iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
             btnOk.className = "text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 ";
             
@@ -526,7 +583,7 @@ include 'includes/header.php';
 
     window.alert = customAlert;
 
-    // --- Pagination & Search Logic ---
+    // --- Pagination Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('inventory-tbody');
     const allRows = Array.from(tbody.querySelectorAll('tr.inventory-row'));
@@ -534,7 +591,6 @@ include 'includes/header.php';
     const isUnified = <?= $is_unified ? 'true' : 'false' ?>;
     const isRawMaterial = <?= $view === 'raw_material' ? 'true' : 'false' ?>;
     
-    // Dynamic colspan handling for empty state
     let colspanCount = 5;
     if (isUnified) colspanCount = 5; 
     else if (isRawMaterial) colspanCount = 6;
@@ -636,7 +692,61 @@ include 'includes/header.php';
     updateTable();
 
 
-    // --- Modal Logic ---
+    // ==========================================
+    // 🚨 NEW: STOCK ADJUSTMENT LOGIC
+    // ==========================================
+    function openAdjustModal(id, type, name, currentStock, metric) {
+        document.getElementById('adj_id').value = id;
+        document.getElementById('adj_type').value = type;
+        document.getElementById('adj_item_name').textContent = name;
+        
+        // Remove 'Size: ' prefix for clean UI if it's a product
+        const cleanMetric = metric.replace('Size: ', '');
+        document.getElementById('adj_current_stock').textContent = currentStock + ' ' + cleanMetric;
+        
+        document.getElementById('adj_qty').value = '';
+        document.getElementById('adj_reason').value = '';
+        
+        // Reset to Add Stock
+        document.querySelector('input[name="adj_action"][value="add"]').checked = true;
+
+        document.getElementById('adjust-stock-modal').classList.remove('hidden');
+    }
+
+    function closeAdjustModal() {
+        document.getElementById('adjust-stock-modal').classList.add('hidden');
+    }
+
+    async function saveAdjustment() {
+        const payload = {
+            item_id: document.getElementById('adj_id').value,
+            item_type: document.getElementById('adj_type').value,
+            action: document.querySelector('input[name="adj_action"]:checked').value,
+            qty: document.getElementById('adj_qty').value,
+            reason: document.getElementById('adj_reason').value.trim()
+        };
+
+        if(!payload.qty || payload.qty <= 0) return customAlert("Please enter a valid quantity.", "Missing Data", "error");
+        if(!payload.reason) return customAlert("A reason is required for stock adjustments.", "Missing Reason", "error");
+
+        try {
+            const res = await fetch('actions/adjust_stock.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if(data.status === 'success') {
+                customAlert("Stock adjusted successfully and logged.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                customAlert("Error: " + data.message, "Error", "error");
+            }
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
+    }
+
+
+    // ==========================================
+    // STANDARD INVENTORY MODAL LOGIC
+    // ==========================================
     function toggleItemTypeFields() {
         const type = document.querySelector('input[name="inv_type"]:checked').value;
         if (type === 'raw_material') {
@@ -648,16 +758,30 @@ include 'includes/header.php';
         }
     }
 
-    // Default to raw_material if opening from a unified tab
     const currentBaseType = isUnified ? 'raw_material' : '<?= $view ?>';
 
     function openInventoryModal(id = '', type = currentBaseType, sku = '', name = '', stock = 0, price = 0.00, alert = 10, metric = '') {
         document.getElementById('inv_id').value = id;
         document.getElementById('inv_sku').value = sku;
         document.getElementById('inv_name').value = name;
-        document.getElementById('inv_stock').value = stock;
         document.getElementById('inv_price').value = price;
         document.getElementById('inv_alert').value = alert;
+
+        const stockInput = document.getElementById('inv_stock');
+        const stockHint = document.getElementById('inv_stock_hint');
+        
+        // 🚨 NEW: DISABLE QUANTITY EDIT IF UPDATING AN ITEM
+        if (id !== '') {
+            stockInput.value = stock;
+            stockInput.readOnly = true;
+            stockInput.classList.add('bg-gray-100', 'dark:bg-zinc-800', 'cursor-not-allowed', 'text-gray-500');
+            stockHint.classList.remove('hidden');
+        } else {
+            stockInput.value = 0.00;
+            stockInput.readOnly = false;
+            stockInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800', 'cursor-not-allowed', 'text-gray-500');
+            stockHint.classList.add('hidden');
+        }
 
         document.querySelector(`input[name="inv_type"][value="${type}"]`).checked = true;
         toggleItemTypeFields(); 
@@ -666,7 +790,7 @@ include 'includes/header.php';
             document.getElementById('inv_uom').value = metric;
             document.getElementById('inv_size').value = '';
         } else {
-            document.getElementById('inv_size').value = metric;
+            document.getElementById('inv_size').value = metric.replace('Size: ', '');
             document.getElementById('inv_uom').value = '';
         }
 
@@ -674,7 +798,7 @@ include 'includes/header.php';
             radio.disabled = id !== ''; 
         });
 
-        document.getElementById('inv_title').textContent = id ? "Edit Inventory Item" : "Add New Item";
+        document.getElementById('inv_title').textContent = id ? "Edit Item Details" : "Add New Item";
         document.getElementById('inventory-modal').classList.remove('hidden');
     }
 
@@ -689,7 +813,7 @@ include 'includes/header.php';
             item_type: type,
             sku: document.getElementById('inv_sku').value,
             name: document.getElementById('inv_name').value,
-            stock: document.getElementById('inv_stock').value,
+            stock: document.getElementById('inv_stock').value, // Used only if new
             price: document.getElementById('inv_price').value,
             alert: document.getElementById('inv_alert').value,
             uom: document.getElementById('inv_uom').value,
@@ -705,8 +829,7 @@ include 'includes/header.php';
             });
             const data = await res.json();
             if(data.status === 'success') {
-                customAlert("Item saved successfully!", "Success", "success");
-                // If they saved from the Alerts tab, dropping them into the specific table makes sense
+                customAlert("Item details saved successfully!", "Success", "success");
                 const returnView = isUnified ? type : '<?= $view ?>';
                 setTimeout(() => window.location.href = `?view=${returnView}`, 1500);
             } else {
