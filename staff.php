@@ -67,12 +67,14 @@ include 'includes/header.php';
         <?php endif; ?>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
         
-        <div class="relative w-full md:w-96 group">
-            <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-            <input type="text" placeholder="Search by staff name or username..." 
-                   class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm">
+        <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
+            <div class="relative w-full group">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
+                <input type="text" id="search-input" placeholder="Search by staff name or username..." 
+                       class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
+            </div>
         </div>
         
         <?php
@@ -80,7 +82,7 @@ include 'includes/header.php';
             $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
         ?>
         
-        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full md:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800 shrink-0">
             <a href="?view=all" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'all' ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-users text-xs"></i> All Accounts
             </a>
@@ -97,8 +99,8 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
-        <div class="overflow-x-auto">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500 flex flex-col">
+        <div class="overflow-x-auto flex-1">
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
                     <tr>
@@ -109,11 +111,11 @@ include 'includes/header.php';
                         <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
+                <tbody id="staff-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     
                     <?php
                     if ($staff_result->num_rows === 0) {
-                        echo '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No accounts found in this view.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found in this view.</td></tr>';
                     }
 
                     while ($staff = $staff_result->fetch_assoc()) {
@@ -149,7 +151,7 @@ include 'includes/header.php';
                         $row_class = ($view === 'archived' || $status === 'deactivated') ? 'opacity-60 grayscale-[50%]' : '';
                         
                         echo '
-                            <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_class . '">
+                            <tr class="staff-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_class . '">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="h-10 w-10 rounded-full bg-pink-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-pink-600/20">
@@ -219,41 +221,9 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
-
-    <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="global-confirm-backdrop"></div>
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-confirm-box">
-            <div class="p-6 text-center">
-                <div id="global-confirm-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border">
-                    <i id="global-confirm-icon" class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <h3 id="global-confirm-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Are you sure?</h3>
-                <p id="global-confirm-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center gap-3">
-                <button id="global-confirm-cancel" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">Cancel</button>
-                <button id="global-confirm-ok" class="text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="global-alert-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
-            <div class="p-6 text-center">
-                <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-pink-200 dark:border-pink-500/30">
-                    <i id="global-alert-icon" class="fa-solid fa-circle-info"></i>
-                </div>
-                <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Notice</h3>
-                <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
-                <button onclick="closeGlobalAlert()" class="bg-pink-600 hover:bg-pink-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 focus:outline-none transition-all w-full">Got it</button>
-            </div>
-        </div>
-    </div>
-
 </main>
 
 <div id="staff-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -311,6 +281,39 @@ include 'includes/header.php';
     </div>
 </div>
 
+<div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="global-confirm-backdrop"></div>
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-confirm-box">
+        <div class="p-6 text-center">
+            <div id="global-confirm-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border">
+                <i id="global-confirm-icon" class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="global-confirm-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Are you sure?</h3>
+            <p id="global-confirm-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center gap-3">
+            <button id="global-confirm-cancel" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">Cancel</button>
+            <button id="global-confirm-ok" class="text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div id="global-alert-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+        <div class="p-6 text-center">
+            <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-pink-200 dark:border-pink-500/30">
+                <i id="global-alert-icon" class="fa-solid fa-circle-info"></i>
+            </div>
+            <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Notice</h3>
+            <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+            <button onclick="closeGlobalAlert()" class="bg-pink-600 hover:bg-pink-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 focus:outline-none transition-all w-full">Got it</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================
     // 0. GLOBAL UI OVERRIDES
@@ -333,6 +336,9 @@ include 'includes/header.php';
         } else if (type === "success") {
             iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
             icon.className = "fa-solid fa-circle-check";
+        } else if (type === "warning") {
+            iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+            icon.className = "fa-solid fa-triangle-exclamation";
         } else {
             iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
             icon.className = "fa-solid fa-circle-info";
@@ -415,6 +421,113 @@ include 'includes/header.php';
 
     // Overwrite the native functions
     window.alert = customAlert;
+
+    // --- Search & Pagination Logic ---
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('staff-tbody');
+    
+    if (tbody && searchInput) {
+        const allRows = Array.from(tbody.querySelectorAll('tr.staff-row'));
+        const paginationContainer = document.getElementById('pagination-container');
+        const colspanCount = 5;
+        
+        let currentPage = 1;
+        const rowsPerPage = 15;
+
+        function updateTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            const filteredRows = allRows.filter(row => {
+                const text = row.innerText.toLowerCase();
+                return text.includes(searchTerm);
+            });
+
+            const totalItems = filteredRows.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+
+            allRows.forEach(row => row.style.display = 'none');
+
+            filteredRows.slice(startIndex, endIndex).forEach(row => {
+                row.style.display = '';
+            });
+
+            const existingEmptyRow = document.getElementById('js-empty-state');
+            if (totalItems === 0) {
+                if (!existingEmptyRow) {
+                    tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found matching your search.</td></tr>`);
+                } else {
+                    existingEmptyRow.style.display = '';
+                }
+            } else {
+                if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+            }
+
+            const phpEmpty = document.getElementById('php-empty-state');
+            if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+
+            renderPagination(totalItems, totalPages);
+        }
+
+        function renderPagination(totalItems, totalPages) {
+            if (totalItems === 0) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                    <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                        Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="changePage(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 7) {
+                     if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                         html += makePageBtn(i);
+                     } else if (i === currentPage - 2 || i === currentPage + 2) {
+                         html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                     }
+                } else {
+                     html += makePageBtn(i);
+                }
+            }
+
+            html += `
+                        <button onclick="changePage(${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            `;
+            paginationContainer.innerHTML = html;
+        }
+
+        function makePageBtn(i) {
+            const activeClass = i === currentPage 
+                ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+            return `<button onclick="changePage(${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+        }
+
+        window.changePage = function(page) {
+            currentPage = page;
+            updateTable();
+        }
+
+        searchInput.addEventListener('input', () => {
+            currentPage = 1; 
+            updateTable();
+        });
+
+        // Initialize table
+        updateTable();
+    }
 
 
     function openStaffModal(id = '', name = '', email = '', username = '', role = 'staff') {

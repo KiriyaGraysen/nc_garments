@@ -37,7 +37,7 @@ $stmt = $conn->prepare("
     LEFT JOIN admin adm ON log.admin_id = adm.admin_id
     $where_sql
     ORDER BY log.created_at DESC
-    LIMIT 100 
+    LIMIT 200 
 ");
 $stmt->execute();
 $log_result = $stmt->get_result();
@@ -56,21 +56,24 @@ include 'includes/header.php';
 
 <main class="flex-1 p-4 md:p-8 overflow-y-auto transition-colors duration-500 font-sans relative">
     
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-500">History & Changes</h2>
             <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1 transition-colors duration-500">System audit log tracking all user activities, inventory adjustments, and security events.</p>
         </div>
-        <button onclick="exportLogs()" class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500">
-            <i class="fa-solid fa-file-export text-pink-600 dark:text-pink-500"></i> Export Activity Log
+        <button onclick="exportLogs()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-pink-600/20 flex items-center gap-2 cursor-pointer focus:outline-none">
+            <i class="fa-solid fa-file-export"></i> Export Activity Log
         </button>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div class="relative w-full md:w-96 group">
-            <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-            <input type="text" id="search-input" onkeyup="filterLogs()" placeholder="Search logs by user, action, or details..." 
-                   class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm">
+    <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
+        
+        <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
+            <div class="relative w-full group">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
+                <input type="text" id="search-input" placeholder="Search logs by user, action, or details..." 
+                       class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
+            </div>
         </div>
         
         <?php
@@ -78,24 +81,24 @@ include 'includes/header.php';
             $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
         ?>
         
-        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full md:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
-            <a href="?view=all" class="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'all' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-list-ul text-xs"></i> All Activity
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+            <a href="?view=all" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'all' ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-list-ul mr-1.5"></i> All Activity
             </a>
-            <a href="?view=inventory" class="whitespace-nowrap px-5 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'inventory' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-boxes-stacked text-xs"></i> Inventory
+            <a href="?view=inventory" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view === 'inventory' ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Inventory
             </a>
-            <a href="?view=payment" class="whitespace-nowrap px-5 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'payment' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-money-bill-wave text-xs"></i> Payments
+            <a href="?view=payment" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view === 'payment' ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-money-bill-wave mr-1.5"></i> Payments
             </a>
-            <a href="?view=security" class="whitespace-nowrap px-5 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'security' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-shield-halved text-xs"></i> Security
+            <a href="?view=security" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view === 'security' ? $active_tab : $inactive_tab ?>">
+                <i class="fa-solid fa-shield-halved mr-1.5"></i> Security
             </a>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden transition-colors duration-500">
-        <div class="overflow-x-auto">
+    <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col transition-colors duration-500">
+        <div class="overflow-x-auto flex-1">
             <table class="w-full whitespace-nowrap">
                 
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
@@ -111,7 +114,7 @@ include 'includes/header.php';
                     
                     <?php
                     if ($log_result->num_rows === 0) {
-                        echo '<tr id="php-empty-state"><td colspan="4" class="px-6 py-8 text-center text-gray-500">No activity logs found for this category.</td></tr>';
+                        echo '<tr id="php-empty-state"><td colspan="4" class="px-6 py-8 text-center text-gray-500 font-medium">No activity logs found for this category.</td></tr>';
                     }
 
                     while ($log = $log_result->fetch_assoc()) {
@@ -185,6 +188,8 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
 
     <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
@@ -288,12 +293,16 @@ include 'includes/header.php';
             
             if (type === "danger") {
                 iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
-                icon.className = "fa-solid fa-triangle-exclamation";
+                icon.className = "fa-solid fa-trash";
                 btnOk.className += "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20";
+            } else if (type === "info") {
+                iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+                icon.className = "fa-solid fa-file-export";
+                btnOk.className += "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20";
             } else {
-                iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
-                icon.className = "fa-solid fa-circle-question";
-                btnOk.className += "bg-pink-600 hover:bg-pink-700 shadow-pink-600/20";
+                iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
             }
 
             modal.classList.remove('hidden');
@@ -323,45 +332,121 @@ include 'includes/header.php';
         });
     }
 
+    // Overwrite the native functions
     window.alert = customAlert;
 
-    // --- Search Logic ---
-    function filterLogs() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const rows = document.querySelectorAll('.log-row');
-        let visibleCount = 0;
+    // --- Standard Pagination & Search Logic ---
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('log-tbody');
+    
+    if (tbody && searchInput) {
+        const allRows = Array.from(tbody.querySelectorAll('tr.log-row'));
+        const paginationContainer = document.getElementById('pagination-container');
+        const colspanCount = 4;
         
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            if (text.includes(query)) {
+        let currentPage = 1;
+        const rowsPerPage = 15;
+
+        function updateTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            const filteredRows = allRows.filter(row => {
+                const text = row.innerText.toLowerCase();
+                return text.includes(searchTerm);
+            });
+
+            const totalItems = filteredRows.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+
+            allRows.forEach(row => row.style.display = 'none');
+
+            filteredRows.slice(startIndex, endIndex).forEach(row => {
                 row.style.display = '';
-                visibleCount++;
+            });
+
+            // 🚨 FIXED LOGIC: Only show JS empty state if we actually have database rows, but the search filtered them all out.
+            const existingEmptyRow = document.getElementById('js-empty-state');
+            if (totalItems === 0 && allRows.length > 0) {
+                if (!existingEmptyRow) {
+                    tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium italic">No matching logs found.</td></tr>`);
+                } else {
+                    existingEmptyRow.style.display = '';
+                }
             } else {
-                row.style.display = 'none';
+                if (existingEmptyRow) existingEmptyRow.style.display = 'none';
             }
+
+            const phpEmpty = document.getElementById('php-empty-state');
+            if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+
+            renderPagination(totalItems, totalPages);
+        }
+
+        function renderPagination(totalItems, totalPages) {
+            if (totalItems === 0) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                    <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                        Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="changePage(${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 7) {
+                     if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                         html += makePageBtn(i);
+                     } else if (i === currentPage - 2 || i === currentPage + 2) {
+                         html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                     }
+                } else {
+                     html += makePageBtn(i);
+                }
+            }
+
+            html += `
+                        <button onclick="changePage(${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            `;
+            paginationContainer.innerHTML = html;
+        }
+
+        function makePageBtn(i) {
+            const activeClass = i === currentPage 
+                ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+            return `<button onclick="changePage(${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+        }
+
+        window.changePage = function(page) {
+            currentPage = page;
+            updateTable();
+        }
+
+        searchInput.addEventListener('input', () => {
+            currentPage = 1; 
+            updateTable();
         });
 
-        const emptyState = document.getElementById('js-empty-state');
-        const phpEmptyState = document.getElementById('php-empty-state');
-        
-        if (phpEmptyState) phpEmptyState.style.display = 'none';
-
-        if (visibleCount === 0 && rows.length > 0) {
-            if (!emptyState) {
-                document.getElementById('log-tbody').insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="4" class="px-6 py-8 text-center text-gray-500">No matching logs found.</td></tr>`);
-            } else {
-                emptyState.style.display = '';
-            }
-        } else if (emptyState) {
-            emptyState.style.display = 'none';
-        }
+        // Initialize table
+        updateTable();
     }
 
     async function exportLogs() {
-        const isConfirmed = await customConfirm("Are you sure you want to export all visible activity logs to a CSV file?", "Export Logs", "Yes, Export", "info");
+        const isConfirmed = await customConfirm("Are you sure you want to export all activity logs to a CSV file?", "Export Logs", "Yes, Export", "info");
         if (isConfirmed) {
-            // Note: Since this is a UI update, you will need to map this to your actual export endpoint!
-            window.location.href = `actions/export_logs.php?view=<?= $view ?>`;
+            window.location.href = `actions/export_logs.php?view=<?= htmlspecialchars($view) ?>`;
         }
     }
 </script>
