@@ -213,7 +213,7 @@ include 'includes/header.php';
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-zinc-900/80 px-5 py-3 border-t border-gray-50 dark:border-zinc-800 transition-colors duration-500">
-                            <a href="inventory.php" class="text-xs font-bold <?= $low_stock > 0 ? 'text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400' : 'text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400' ?> flex items-center justify-between">
+                            <a href="inventory.php?view=alerts" class="text-xs font-bold <?= $low_stock > 0 ? 'text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400' : 'text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400' ?> flex items-center justify-between">
                                 Check inventory <i class="fa-solid fa-arrow-right text-[10px]"></i>
                             </a>
                         </div>

@@ -19,6 +19,32 @@ $admin = $result->fetch_assoc();
 
 $stmt->close();
 
+// ==========================================
+// 🚨 FETCH LOW STOCK NOTIFICATIONS (UNIFIED)
+// ==========================================
+$low_stock_alerts = [];
+// Use UNION ALL to grab low stock from BOTH tables
+$notif_query = $conn->query("
+    SELECT material_name as name, current_stock as stock, min_stock_alert as alert, unit_of_measure as metric, 'raw_material' as type 
+    FROM raw_material 
+    WHERE current_stock <= min_stock_alert AND is_archived = 0
+    
+    UNION ALL
+    
+    SELECT product_name as name, current_stock as stock, min_stock_alert as alert, size as metric, 'premade_product' as type 
+    FROM premade_product 
+    WHERE current_stock <= min_stock_alert AND is_archived = 0
+    
+    ORDER BY stock ASC
+");
+
+if ($notif_query) {
+    while($row = $notif_query->fetch_assoc()) {
+        $low_stock_alerts[] = $row;
+    }
+}
+$notif_count = count($low_stock_alerts);
+
 function generate_initials($name) {
     // 1. Remove any accidental spaces at the start or end
     $name = trim($name);
@@ -34,19 +60,15 @@ function generate_initials($name) {
 
     if ($word_count >= 2) {
         // CONDITION A: 2 or more words (e.g., "Sherwin Samonte" -> "SS")
-        // Grab the first letter of the first word
         $first_letter = substr($words[0], 0, 1);
-        // Grab the first letter of the very last word (ignores middle names)
         $last_letter = substr(end($words), 0, 1);
-        
         $initials = $first_letter . $last_letter;
     } else {
         // CONDITION B: Only 1 word (e.g., "Admin" -> "AD")
-        // Grab the first two letters of that single word
         $initials = substr($name, 0, 2);
     }
 
-    // 3. Return it in uppercase so it always looks good in the avatar
+    // 3. Return it in uppercase
     return strtoupper($initials);
 }
 
@@ -262,10 +284,69 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
                 </button>
                 
-                <button class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
-                    <i class="fa-regular fa-bell text-xl"></i>
-                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-pink-600 ring-2 ring-white dark:ring-zinc-900"></span>
-                </button>
+                <div class="relative">
+                    <button onclick="toggleNotifications()" class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
+                        <i class="fa-regular fa-bell text-xl"></i>
+                        
+                        <?php if ($notif_count > 0): ?>
+                            <span class="absolute -top-2 -right-3 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-pink-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-zinc-900">
+                                <?= $notif_count > 9 ? '9+' : $notif_count ?>
+                            </span>
+                        <?php endif; ?>
+                    </button>
+
+                    <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-3 w-80 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-2xl shadow-xl z-50 overflow-hidden origin-top-right transition-all">
+                        
+                        <div class="px-4 py-3 border-b border-gray-50 dark:border-zinc-800/50 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
+                            <span class="text-xs font-black text-gray-500 dark:text-zinc-400 uppercase tracking-widest">Alerts & Stock</span>
+                            <?php if ($notif_count > 0): ?>
+                                <span class="text-[10px] font-bold bg-pink-50 dark:bg-pink-500/10 text-pink-600 px-2 py-0.5 rounded-md"><?= $notif_count ?> Low Items</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="max-h-80 overflow-y-auto">
+                            <?php if ($notif_count > 0): ?>
+                                <?php foreach ($low_stock_alerts as $alert): ?>
+                                    <div class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 border-b border-gray-50 dark:border-zinc-800/30 transition-colors">
+                                        <div class="flex items-center gap-3">
+                                            <div class="h-8 w-8 rounded-full bg-rose-100 dark:bg-rose-500/10 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-triangle-exclamation text-rose-600 text-xs"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-center mb-0.5">
+                                                    <p class="text-xs font-bold text-gray-900 dark:text-white truncate pr-2"><?= htmlspecialchars($alert['name']) ?></p>
+                                                    <?php if($alert['type'] === 'raw_material'): ?>
+                                                        <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">Mat</span>
+                                                    <?php else: ?>
+                                                        <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">Prod</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <p class="text-[10px] font-medium text-rose-500">
+                                                    Stock: <?= $alert['stock'] ?> <?= $alert['metric'] ?> 
+                                                    <span class="text-gray-400 dark:text-zinc-600 ml-1">(Limit: <?= $alert['alert'] ?>)</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="px-6 py-10 text-center">
+                                    <i class="fa-solid fa-check-circle text-emerald-500 text-3xl mb-3 opacity-20"></i>
+                                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">All Stock Sufficient</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <?php if ($notif_count > 0): ?>
+                        <div class="border-t border-gray-100 dark:border-zinc-800">
+                            <a href="inventory.php?view=alerts" class="block w-full py-3 text-center text-[10px] font-black text-pink-600 uppercase tracking-widest hover:bg-pink-50 dark:hover:bg-pink-500/5 transition-colors bg-gray-50/50 dark:bg-zinc-950/30">
+                                View All In Alerts Tab
+                            </a>
+                        </div>
+                        <?php endif; ?>
+                        
+                    </div>
+                </div>
 
                 <div class="hidden md:block h-6 w-px bg-gray-200 dark:bg-zinc-800"></div>
 
@@ -309,6 +390,44 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </header>
 
         <script>
+            // 🚨 NEW: Notification Toggling Logic
+            function toggleNotifications() {
+                const dropdown = document.getElementById('notif-dropdown');
+                dropdown.classList.toggle('hidden');
+                
+                // Close user dropdown if open
+                const userDropdown = document.getElementById('user-dropdown');
+                const arrow = document.getElementById('user-menu-arrow');
+                if (userDropdown) userDropdown.classList.add('hidden');
+                if (arrow) arrow.classList.remove('rotate-180');
+            }
+
+            function toggleUserMenu() {
+                const dropdown = document.getElementById('user-dropdown');
+                const arrow = document.getElementById('user-menu-arrow');
+                dropdown.classList.toggle('hidden');
+                arrow.classList.toggle('rotate-180');
+                
+                // Close notif dropdown if open
+                const notifDropdown = document.getElementById('notif-dropdown');
+                if (notifDropdown) notifDropdown.classList.add('hidden');
+            }
+
+            // Close all dropdowns when clicking outside
+            window.addEventListener('click', function(e) {
+                if (!e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown')) {
+                    const userDropdown = document.getElementById('user-dropdown');
+                    const arrow = document.getElementById('user-menu-arrow');
+                    if (userDropdown) userDropdown.classList.add('hidden');
+                    if (arrow) arrow.classList.remove('rotate-180');
+                }
+                
+                if (!e.target.closest('button[onclick="toggleNotifications()"]') && !e.target.closest('#notif-dropdown')) {
+                    const notifDropdown = document.getElementById('notif-dropdown');
+                    if (notifDropdown) notifDropdown.classList.add('hidden');
+                }
+            });
+
             function updateLiveClock() {
                 const now = new Date();
                 

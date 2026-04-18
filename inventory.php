@@ -2,45 +2,58 @@
 require_once('config/database.php');
 $page_title = "Inventory | NC Garments";
 
-// 1. Determine which tab is active and check if it's an archived view
-$valid_views = ['raw_material', 'premade_product', 'archived_raw', 'archived_premade'];
+// 1. Determine which tab is active
+$valid_views = ['raw_material', 'premade_product', 'alerts', 'archived'];
 $view = $_GET['view'] ?? 'raw_material';
 if (!in_array($view, $valid_views)) {
     $view = 'raw_material'; 
 }
 
-$is_archived_view = ($view === 'archived_raw' || $view === 'archived_premade') ? 1 : 0;
-$base_type = ($view === 'raw_material' || $view === 'archived_raw') ? 'raw_material' : 'premade_product';
+$is_unified = ($view === 'alerts' || $view === 'archived');
+$is_archived_view = ($view === 'archived');
 
 // 2. Setup Sorting Logic
 $sort = $_GET['sort'] ?? 'name_asc';
-$name_col = ($base_type === 'raw_material') ? 'material_name' : 'product_name';
-$price_col = ($base_type === 'raw_material') ? 'current_price' : 'selling_price';
 
+// Use standardized aliases for the unified query
 switch ($sort) {
-    case 'name_desc': $order_by = "$name_col DESC"; break;
-    case 'stock_asc': $order_by = "current_stock ASC"; break;
-    case 'stock_desc': $order_by = "current_stock DESC"; break;
-    case 'price_asc': $order_by = "$price_col ASC"; break;
-    case 'price_desc': $order_by = "$price_col DESC"; break;
-    default: $order_by = "$name_col ASC"; break; // Default is name_asc
+    case 'name_desc': $order_by = "name DESC"; break;
+    case 'stock_asc': $order_by = "stock ASC"; break;
+    case 'stock_desc': $order_by = "stock DESC"; break;
+    case 'price_asc': $order_by = "price ASC"; break;
+    case 'price_desc': $order_by = "price DESC"; break;
+    default: $order_by = "name ASC"; break; // Default
 }
 
-// 3. Fetch data based on base type, archive status, and sort order
-if ($base_type === 'raw_material') {
+// 3. Define the base queries to ensure columns match perfectly for UNION
+$query_raw = "SELECT material_id as id, sku, material_name as name, current_stock as stock, unit_of_measure as metric, current_price as price, min_stock_alert as alert, 'raw_material' as type FROM raw_material";
+$query_prod = "SELECT product_id as id, sku, product_name as name, current_stock as stock, size as metric, selling_price as price, min_stock_alert as alert, 'premade_product' as type FROM premade_product";
+
+// 4. Fetch data based on the view
+if ($view === 'raw_material') {
+    $stmt = $conn->prepare("$query_raw WHERE is_archived = 0 ORDER BY $order_by");
+} elseif ($view === 'premade_product') {
+    $stmt = $conn->prepare("$query_prod WHERE is_archived = 0 ORDER BY $order_by");
+} elseif ($view === 'alerts') {
+    // 🚨 UNIFIED ALERTS: Stitch both tables together where stock is low
     $stmt = $conn->prepare("
-        SELECT material_id as id, sku, material_name as name, current_stock as stock, 
-               unit_of_measure as metric, current_price as price, min_stock_alert as alert
-        FROM raw_material WHERE is_archived = ? ORDER BY $order_by
+        SELECT * FROM (
+            $query_raw WHERE is_archived = 0 AND current_stock <= min_stock_alert
+            UNION ALL
+            $query_prod WHERE is_archived = 0 AND current_stock <= min_stock_alert
+        ) as combined ORDER BY $order_by
     ");
-} else {
+} elseif ($view === 'archived') {
+    // 🗃️ UNIFIED ARCHIVE: Stitch both tables together where archived
     $stmt = $conn->prepare("
-        SELECT product_id as id, sku, product_name as name, current_stock as stock, 
-               size as metric, selling_price as price, min_stock_alert as alert
-        FROM premade_product WHERE is_archived = ? ORDER BY $order_by
+        SELECT * FROM (
+            $query_raw WHERE is_archived = 1
+            UNION ALL
+            $query_prod WHERE is_archived = 1
+        ) as combined ORDER BY $order_by
     ");
 }
-$stmt->bind_param("i", $is_archived_view);
+
 $stmt->execute();
 $items_result = $stmt->get_result();
 
@@ -76,31 +89,28 @@ include 'includes/header.php';
                     <option value="?view=<?= $view ?>&sort=name_desc" <?= $sort == 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
                     <option value="?view=<?= $view ?>&sort=stock_asc" <?= $sort == 'stock_asc' ? 'selected' : '' ?>>Stock (Low to High)</option>
                     <option value="?view=<?= $view ?>&sort=stock_desc" <?= $sort == 'stock_desc' ? 'selected' : '' ?>>Stock (High to Low)</option>
-                    <option value="?view=<?= $view ?>&sort=price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Price (Low to High)</option>
-                    <option value="?view=<?= $view ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Price (High to Low)</option>
+                    <?php if (!$is_unified): ?>
+                        <option value="?view=<?= $view ?>&sort=price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Price (Low to High)</option>
+                        <option value="?view=<?= $view ?>&sort=price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Price (High to Low)</option>
+                    <?php endif; ?>
                 </select>
                 <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
             </div>
         </div>
         
-        <?php
-            $active_tab = "bg-white dark:bg-zinc-800 text-pink-600 dark:text-pink-500 shadow-sm";
-            $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
-        ?>
-        
         <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
-            <a href="?view=raw_material&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'raw_material' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-layer-group text-xs"></i> Raw Materials
+            <a href="?view=raw_material" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'raw_material' ? 'bg-white dark:bg-zinc-800 text-pink-600 dark:text-pink-500 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white' ?>">
+                <i class="fa-solid fa-layer-group text-xs"></i> Materials
             </a>
-            <a href="?view=premade_product&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'premade_product' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-tags text-xs"></i> Premade Products
+            <a href="?view=premade_product" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'premade_product' ? 'bg-white dark:bg-zinc-800 text-pink-600 dark:text-pink-500 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white' ?>">
+                <i class="fa-solid fa-tags text-xs"></i> Products
             </a>
             <span class="mx-1 border-r border-gray-300 dark:border-zinc-700"></span>
-            <a href="?view=archived_raw&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_raw' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-box-archive text-xs"></i> Arch. Materials
+            <a href="?view=alerts" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'alerts' ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-rose-400 dark:text-rose-500/70 hover:text-rose-600 dark:hover:text-rose-400' ?>">
+                <i class="fa-solid fa-triangle-exclamation text-xs"></i> Low Stock Alerts
             </a>
-            <a href="?view=archived_premade&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived_premade' ? $active_tab : $inactive_tab ?>">
-                <i class="fa-solid fa-box-archive text-xs"></i> Arch. Products
+            <a href="?view=archived" class="whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view === 'archived' ? 'bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-200 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white' ?>">
+                <i class="fa-solid fa-box-archive text-xs"></i> Archived
             </a>
         </div>
     </div>
@@ -110,14 +120,22 @@ include 'includes/header.php';
             <table class="w-full whitespace-nowrap">
                 <thead class="bg-gray-50 dark:bg-zinc-950/50 border-b border-gray-100 dark:border-zinc-800 transition-colors duration-500">
                     <tr>
-                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Item Details</th>
-                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Stock Level</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Item Name</th>
                         
-                        <?php if ($base_type === 'raw_material'): ?>
-                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Backordered</th>
+                        <?php if ($is_unified): ?>
+                            <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Category</th>
                         <?php endif; ?>
 
-                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Unit Price/Cost</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Stock Level</th>
+                        
+                        <?php if ($view === 'raw_material'): ?>
+                            <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Backordered</th>
+                        <?php endif; ?>
+
+                        <?php if (!$is_unified): ?>
+                            <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Unit Price/Cost</th>
+                        <?php endif; ?>
+                        
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Status</th>
                         <th class="px-6 py-4 text-center text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
@@ -126,7 +144,7 @@ include 'includes/header.php';
                     
                     <?php
                     if ($items_result->num_rows === 0) {
-                        $colspan = ($base_type === 'raw_material') ? 6 : 5;
+                        $colspan = $is_unified ? 5 : ($view === 'raw_material' ? 6 : 5);
                         echo '<tr id="php-empty-state"><td colspan="'.$colspan.'" class="px-6 py-8 text-center text-gray-500 font-medium">No items found in this category.</td></tr>';
                     }
 
@@ -146,11 +164,12 @@ include 'includes/header.php';
                         $is_out_of_stock = $stock_val <= 0;
                         $is_low_stock = !$is_out_of_stock && ($stock_val <= $alert_val);
                         
-                        $metric_label = $base_type === 'raw_material' ? htmlspecialchars($item['metric']) : 'Size: ' . htmlspecialchars($item['metric']);
+                        $metric_label = $item['type'] === 'raw_material' ? htmlspecialchars($item['metric']) : 'Size: ' . htmlspecialchars($item['metric']);
 
                         $safe_sku = addslashes($item['sku']);
                         $safe_name = addslashes($item['name']);
                         $safe_metric = addslashes($item['metric']);
+                        $safe_type = addslashes($item['type']);
                         
                         $row_bg = '';
                         if (!$is_archived_view) {
@@ -179,7 +198,18 @@ include 'includes/header.php';
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors">'.htmlspecialchars($item['name']).'</div>
                                 <div class="text-xs font-bold tracking-wider text-gray-400 mt-1">SKU: '.htmlspecialchars($item['sku']).'</div>
-                            </td>
+                            </td>';
+
+                            // Unified Column: Category Badge
+                            if ($is_unified) {
+                                $cat_bg = $item['type'] === 'raw_material' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
+                                $cat_label = $item['type'] === 'raw_material' ? 'Material' : 'Product';
+                                echo '<td class="px-6 py-4">
+                                        <span class="'.$cat_bg.' text-[10px] font-extrabold px-2 py-0.5 rounded uppercase border">'.$cat_label.'</span>
+                                      </td>';
+                            }
+
+                        echo '
                             <td class="px-6 py-4">
                                 <div class="flex items-baseline gap-1">
                                     <span class="text-lg font-extrabold '.$stock_color.'">'.$display_stock.'</span>
@@ -188,7 +218,7 @@ include 'includes/header.php';
                                 <div class="text-[10px] font-bold '.$alert_color.' mt-1 uppercase tracking-wider">Min Alert: '.$item['alert'].'</div>
                             </td>';
                             
-                            if ($base_type === 'raw_material') {
+                            if ($view === 'raw_material') {
                                 echo '<td class="px-6 py-4">';
                                 if ($deficit > 0 && !$is_archived_view) {
                                     echo '
@@ -203,11 +233,14 @@ include 'includes/header.php';
                                 echo '</td>';
                             }
 
-                            echo '<td class="px-6 py-4">
-                                <div class="font-extrabold text-gray-900 dark:text-white">₱ '.number_format($item['price'], 2).'</div>
-                                <div class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">Per Unit</div>
-                            </td>
-                            <td class="px-6 py-4">';
+                            if (!$is_unified) {
+                                echo '<td class="px-6 py-4">
+                                    <div class="font-extrabold text-gray-900 dark:text-white">₱ '.number_format($item['price'], 2).'</div>
+                                    <div class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">Per Unit</div>
+                                </td>';
+                            }
+
+                            echo '<td class="px-6 py-4">';
                                 if ($is_archived_view) {
                                     echo '<span class="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider border border-gray-200 dark:border-zinc-700 flex items-center w-max gap-1.5">
                                             <i class="fa-solid fa-box-archive"></i> Archived
@@ -230,7 +263,7 @@ include 'includes/header.php';
                                 <div class="flex items-center justify-center gap-1.5">';
                                 
                                 if ($is_archived_view) {
-                                    echo '<button onclick="restoreItem('.$item['id'].', \''.$base_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                    echo '<button onclick="restoreItem('.$item['id'].', \''.$safe_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                               <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
                                               
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
@@ -239,7 +272,7 @@ include 'includes/header.php';
                                               </span>
                                           </button>';
                                 } else {
-                                    echo '<button onclick="openInventoryModal('.$item['id'].', \''.$base_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                    echo '<button onclick="openInventoryModal('.$item['id'].', \''.$safe_type.'\', \''.$safe_sku.'\', \''.$safe_name.'\', '.$item['stock'].', '.$item['price'].', '.$item['alert'].', \''.$safe_metric.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                               <i class="fa-solid fa-pen-to-square transition-colors"></i>
                                               
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
@@ -248,7 +281,7 @@ include 'includes/header.php';
                                               </span>
                                           </button>
                                           
-                                          <button onclick="archiveItem('.$item['id'].', \''.$base_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <button onclick="archiveItem('.$item['id'].', \''.$safe_type.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                               <i class="fa-solid fa-box-archive transition-colors"></i>
                                               
                                               <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
@@ -498,9 +531,14 @@ include 'includes/header.php';
     const tbody = document.getElementById('inventory-tbody');
     const allRows = Array.from(tbody.querySelectorAll('tr.inventory-row'));
     const paginationContainer = document.getElementById('pagination-container');
-    const baseType = '<?= $base_type ?>';
-    const colspanCount = baseType === 'raw_material' ? 6 : 5;
+    const isUnified = <?= $is_unified ? 'true' : 'false' ?>;
+    const isRawMaterial = <?= $view === 'raw_material' ? 'true' : 'false' ?>;
     
+    // Dynamic colspan handling for empty state
+    let colspanCount = 5;
+    if (isUnified) colspanCount = 5; 
+    else if (isRawMaterial) colspanCount = 6;
+
     let currentPage = 1;
     const rowsPerPage = 15;
 
@@ -610,7 +648,8 @@ include 'includes/header.php';
         }
     }
 
-    const currentBaseType = '<?= $base_type ?>';
+    // Default to raw_material if opening from a unified tab
+    const currentBaseType = isUnified ? 'raw_material' : '<?= $view ?>';
 
     function openInventoryModal(id = '', type = currentBaseType, sku = '', name = '', stock = 0, price = 0.00, alert = 10, metric = '') {
         document.getElementById('inv_id').value = id;
@@ -667,7 +706,9 @@ include 'includes/header.php';
             const data = await res.json();
             if(data.status === 'success') {
                 customAlert("Item saved successfully!", "Success", "success");
-                setTimeout(() => window.location.href = `?view=${type}`, 1500);
+                // If they saved from the Alerts tab, dropping them into the specific table makes sense
+                const returnView = isUnified ? type : '<?= $view ?>';
+                setTimeout(() => window.location.href = `?view=${returnView}`, 1500);
             } else {
                 customAlert("Error: " + data.message, "Error", "error");
             }
