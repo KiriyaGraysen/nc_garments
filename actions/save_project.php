@@ -1,11 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-// Ensure session is started to track who created the project
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // Use the actual logged-in admin
 if (!isset($_SESSION['admin_id'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized access."]);

@@ -1,11 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-// Ensure session is started to track who is performing the restore
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $data = json_decode(file_get_contents('php://input'), true);
 
 if ($data && isset($data['admin_id'])) {

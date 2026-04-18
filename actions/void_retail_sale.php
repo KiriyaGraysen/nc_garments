@@ -3,11 +3,6 @@ require_once('../config/database.php');
 
 header('Content-Type: application/json');
 
-// Ensure session is started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // Security check
 if (!isset($_SESSION['admin_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);

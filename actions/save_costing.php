@@ -2,11 +2,6 @@
 // actions/save_costing.php
 require_once('../config/database.php');
 
-// Ensure session is started so we know who updated the costing
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $json = file_get_contents('php://input');
     $data = json_decode($json, true);

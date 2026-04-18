@@ -1,10 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $data = json_decode(file_get_contents('php://input'), true);
 
 if ($data && isset($data['project_id'])) {

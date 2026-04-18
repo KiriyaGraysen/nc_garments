@@ -709,6 +709,10 @@ include 'includes/header.php';
     // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
     // ==========================================
     
+    // 🚨 BUG FIX: Global timers to prevent modals from hiding each other
+    let globalAlertTimeout;
+    let globalConfirmTimeout;
+
     function customAlert(message, title = "Notice", type = "info") {
         const modal = document.getElementById('global-alert-modal');
         const box = document.getElementById('global-alert-box');
@@ -733,6 +737,7 @@ include 'includes/header.php';
             icon.className = "fa-solid fa-circle-info";
         }
 
+        clearTimeout(globalAlertTimeout); // Prevent previous close animations from hiding this
         modal.classList.remove('hidden');
         setTimeout(() => {
             box.classList.remove('scale-95', 'opacity-0');
@@ -745,10 +750,9 @@ include 'includes/header.php';
         const box = document.getElementById('global-alert-box');
         box.classList.remove('scale-100', 'opacity-100');
         box.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 200);
+        globalAlertTimeout = setTimeout(() => modal.classList.add('hidden'), 200);
     }
 
-    // A Promise-based confirm dialog so we can `await customConfirm(...)` just like native confirm()
     function customConfirm(message, title = "Are you sure?", confirmBtnText = "Confirm", type = "warning") {
         return new Promise((resolve) => {
             const modal = document.getElementById('global-confirm-modal');
@@ -765,7 +769,6 @@ include 'includes/header.php';
             titleEl.textContent = title;
             btnOk.textContent = confirmBtnText;
 
-            // Theme the confirm dialog
             iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
             btnOk.className = "text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 ";
             
@@ -779,6 +782,7 @@ include 'includes/header.php';
                 btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
             }
 
+            clearTimeout(globalConfirmTimeout); // Prevent previous close animations from hiding this
             modal.classList.remove('hidden');
             setTimeout(() => {
                 box.classList.remove('scale-95', 'opacity-0');
@@ -788,9 +792,9 @@ include 'includes/header.php';
             const cleanupAndResolve = (result) => {
                 box.classList.remove('scale-100', 'opacity-100');
                 box.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => modal.classList.add('hidden'), 200);
                 
-                // Remove listeners so they don't stack up
+                globalConfirmTimeout = setTimeout(() => modal.classList.add('hidden'), 200);
+                
                 btnOk.removeEventListener('click', onOk);
                 btnCancel.removeEventListener('click', onCancel);
                 backdrop.removeEventListener('click', onCancel);
@@ -807,7 +811,6 @@ include 'includes/header.php';
         });
     }
 
-    // Overwrite the native functions entirely!
     window.alert = customAlert;
 
     // --- Pagination & Search Logic ---
@@ -1287,7 +1290,9 @@ include 'includes/header.php';
         if ((newProgress === 'sampling' || newProgress === 'cutting') && oldProgress === 'not started') {
             const isConfirmed = await customConfirm(`You are moving the project to '${newProgress}'.\n\nDo you want to officially start this project and deduct the materials from the warehouse inventory?`, "Start Production");
             if (isConfirmed) {
-                startProjectProduction(projectId, false, newProgress);
+                // 🚨 BUG FIX: Added small delay so the first modal closes smoothly before next opens
+                await new Promise(resolve => setTimeout(resolve, 250)); 
+                await startProjectProduction(projectId, false, newProgress); // Added AWAIT!
             } else {
                 window.location.reload(); 
             }
@@ -1614,7 +1619,9 @@ include 'includes/header.php';
                 );
 
                 if (isConfirmed) {
-                    startProjectProduction(projectId, true, targetPhase);
+                    // 🚨 Added tiny delay so second confirm modal closes smoothly before processing
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                    await startProjectProduction(projectId, true, targetPhase); // 🚨 Added AWAIT!
                 } else {
                     window.location.reload(); 
                 }

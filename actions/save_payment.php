@@ -1,11 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-// Ensure session is started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // Security check: Must be logged in to process payments!
 if (!isset($_SESSION['admin_id'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);

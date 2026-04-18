@@ -1,11 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-// Ensure session is started to track who performed the restoration
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $data = json_decode(file_get_contents('php://input'), true);
 
 if ($data && isset($data['item_id']) && isset($data['item_type'])) {

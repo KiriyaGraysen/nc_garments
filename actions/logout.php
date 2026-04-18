@@ -25,3 +25,4 @@ session_destroy();
 // 4. Redirect back to the login screen
 header("Location: ../login.php");
 exit();
+?>

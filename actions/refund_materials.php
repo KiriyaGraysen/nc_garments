@@ -4,11 +4,6 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 require_once('../config/database.php');
 
-// Ensure session is active
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $data = json_decode(file_get_contents('php://input'), true);
 if (!isset($data['project_id'])) {
     echo json_encode(["status" => "error", "message" => "Missing Project ID"]);

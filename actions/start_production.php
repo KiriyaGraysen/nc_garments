@@ -1,11 +1,6 @@
 <?php
 require_once('../config/database.php');
 
-// Ensure session is active
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // Security check
 if (!isset($_SESSION['admin_id'])) {
     echo json_encode(["status" => "error", "message" => "Unauthorized"]);
