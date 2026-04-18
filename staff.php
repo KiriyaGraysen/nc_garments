@@ -187,28 +187,28 @@ include 'includes/header.php';
                         
                         if ($view === 'archived') {
                             // If viewing archived, only show the Unarchive button
-                            echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm">
-                                    <i class="fa-solid fa-trash-can-arrow-up mr-1"></i> Unarchive
+                            echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
+                                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Restore
                                   </button>';
                         } else {
                             // Standard Actions
-                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.addslashes($user).'\', \''.$role.'\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm">
+                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.addslashes($user).'\', \''.$role.'\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
                                     <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
                                   </button>';
                                   
                             if (!$is_current_user) {
                                 if ($status === 'active') {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm">
+                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
                                             <i class="fa-solid fa-ban mr-1"></i> Revoke
                                           </button>';
                                 } else {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm">
+                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
                                             <i class="fa-solid fa-unlock-keyhole mr-1"></i> Restore
                                           </button>';
                                 }
                                 
-                                echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="text-gray-400 hover:text-rose-600 focus:outline-none p-1 ml-1" title="Archive Account">
-                                        <i class="fa-solid fa-trash"></i>
+                                echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="text-gray-400 hover:text-amber-500 focus:outline-none p-1 ml-1" title="Archive Account">
+                                        <i class="fa-solid fa-box-archive"></i>
                                       </button>';
                             }
                         }
@@ -220,6 +220,40 @@ include 'includes/header.php';
             </table>
         </div>
     </div>
+
+    <div id="global-confirm-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" id="global-confirm-backdrop"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-confirm-box">
+            <div class="p-6 text-center">
+                <div id="global-confirm-icon-wrapper" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border">
+                    <i id="global-confirm-icon" class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="global-confirm-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Are you sure?</h3>
+                <p id="global-confirm-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center gap-3">
+                <button id="global-confirm-cancel" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">Cancel</button>
+                <button id="global-confirm-ok" class="text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="global-alert-modal" class="fixed inset-0 z-[90] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+            <div class="p-6 text-center">
+                <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-pink-200 dark:border-pink-500/30">
+                    <i id="global-alert-icon" class="fa-solid fa-circle-info"></i>
+                </div>
+                <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Notice</h3>
+                <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+                <button onclick="closeGlobalAlert()" class="bg-pink-600 hover:bg-pink-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 focus:outline-none transition-all w-full">Got it</button>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <div id="staff-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -278,6 +312,111 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // ==========================================
+    // 0. GLOBAL UI OVERRIDES
+    // ==========================================
+    function customAlert(message, title = "Notice", type = "info") {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        const msgEl = document.getElementById('global-alert-msg');
+        const titleEl = document.getElementById('global-alert-title');
+        const iconWrapper = document.getElementById('global-alert-icon-wrapper');
+        const icon = document.getElementById('global-alert-icon');
+
+        msgEl.textContent = message;
+        titleEl.textContent = title;
+
+        iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+        if (type === "error") {
+            iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+            icon.className = "fa-solid fa-circle-xmark";
+        } else if (type === "success") {
+            iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+            icon.className = "fa-solid fa-circle-check";
+        } else {
+            iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
+            icon.className = "fa-solid fa-circle-info";
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            box.classList.remove('scale-95', 'opacity-0');
+            box.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeGlobalAlert() {
+        const modal = document.getElementById('global-alert-modal');
+        const box = document.getElementById('global-alert-box');
+        box.classList.remove('scale-100', 'opacity-100');
+        box.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    function customConfirm(message, title = "Are you sure?", confirmBtnText = "Confirm", type = "warning") {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('global-confirm-modal');
+            const box = document.getElementById('global-confirm-box');
+            const msgEl = document.getElementById('global-confirm-msg');
+            const titleEl = document.getElementById('global-confirm-title');
+            const btnOk = document.getElementById('global-confirm-ok');
+            const btnCancel = document.getElementById('global-confirm-cancel');
+            const backdrop = document.getElementById('global-confirm-backdrop');
+            const iconWrapper = document.getElementById('global-confirm-icon-wrapper');
+            const icon = document.getElementById('global-confirm-icon');
+
+            msgEl.textContent = message;
+            titleEl.textContent = title;
+            btnOk.textContent = confirmBtnText;
+
+            iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
+            btnOk.className = "text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 ";
+            
+            if (type === "danger") {
+                iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
+                icon.className = "fa-solid fa-ban"; 
+                btnOk.className += "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20";
+            } else if (type === "info") {
+                iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
+                icon.className = "fa-solid fa-clock-rotate-left";
+                btnOk.className += "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20";
+            } else {
+                iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+                icon.className = "fa-solid fa-triangle-exclamation";
+                btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const cleanupAndResolve = (result) => {
+                box.classList.remove('scale-100', 'opacity-100');
+                box.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+                
+                btnOk.removeEventListener('click', onOk);
+                btnCancel.removeEventListener('click', onCancel);
+                backdrop.removeEventListener('click', onCancel);
+                
+                resolve(result);
+            };
+
+            const onOk = () => cleanupAndResolve(true);
+            const onCancel = () => cleanupAndResolve(false);
+
+            btnOk.addEventListener('click', onOk);
+            btnCancel.addEventListener('click', onCancel);
+            backdrop.addEventListener('click', onCancel);
+        });
+    }
+
+    // Overwrite the native functions
+    window.alert = customAlert;
+
+
     function openStaffModal(id = '', name = '', email = '', username = '', role = 'staff') {
         document.getElementById('staff_id').value = id;
         document.getElementById('staff_name').value = name;
@@ -313,22 +452,31 @@ include 'includes/header.php';
             password: document.getElementById('staff_password').value
         };
 
-        if (!payload.full_name || !payload.email || !payload.username) return alert("Please fill all required fields.");
-        if (!payload.admin_id && !payload.password) return alert("Password is required for new accounts.");
+        if (!payload.full_name || !payload.email || !payload.username) return customAlert("Please fill all required fields.", "Missing Fields", "error");
+        if (!payload.admin_id && !payload.password) return customAlert("Password is required for new accounts.", "Missing Password", "error");
 
         try {
             const res = await fetch('actions/save_staff.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (data.status === 'success') window.location.reload();
-            else alert("Error: " + data.message);
-        } catch (e) { alert("Network Error"); }
+            if (data.status === 'success') {
+                closeStaffModal();
+                customAlert("Account saved successfully.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                customAlert("Error: " + data.message, "Error", "error");
+            }
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 
     async function toggleStatus(id, newStatus) {
         const actionText = newStatus === 'active' ? 'restore access for' : 'revoke access from';
-        if (!confirm(`Are you sure you want to ${actionText} this user?`)) return;
+        const type = newStatus === 'active' ? 'info' : 'danger';
+        const btnText = newStatus === 'active' ? 'Yes, Restore' : 'Yes, Revoke';
+        
+        const isConfirmed = await customConfirm(`Are you sure you want to ${actionText} this user?`, "Change Status", btnText, type);
+        if (!isConfirmed) return;
         
         try {
             const res = await fetch('actions/toggle_staff_status.php', {
@@ -336,13 +484,18 @@ include 'includes/header.php';
                 body: JSON.stringify({ admin_id: id, new_status: newStatus })
             });
             const data = await res.json();
-            if (data.status === 'success') window.location.reload();
-            else alert("Error: " + data.message);
-        } catch (e) { alert("Network Error"); }
+            if (data.status === 'success') {
+                customAlert("Status updated successfully.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                customAlert("Error: " + data.message, "Error", "error");
+            }
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 
     async function deleteStaff(id) {
-        if (!confirm("Are you sure you want to permanently archive this account? They will be removed from this list entirely.")) return;
+        const isConfirmed = await customConfirm("Are you sure you want to permanently archive this account? They will be removed from this list entirely.", "Archive Account", "Yes, Archive", "warning");
+        if (!isConfirmed) return;
         
         try {
             const res = await fetch('actions/delete_staff.php', {
@@ -350,14 +503,16 @@ include 'includes/header.php';
                 body: JSON.stringify({ admin_id: id })
             });
             const data = await res.json();
-            if (data.status === 'success') window.location.reload();
-            else alert("Error: " + data.message);
-        } catch (e) { alert("Network Error"); }
+            if (data.status === 'success') {
+                customAlert("Account archived.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else customAlert("Error: " + data.message, "Error", "error");
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
     
-    // NEW: Restore Archived Staff
     async function restoreStaff(id) {
-        if (!confirm("Are you sure you want to unarchive this account? They will be restored to the system.")) return;
+        const isConfirmed = await customConfirm("Are you sure you want to unarchive this account? They will be restored to the system.", "Restore Account", "Yes, Restore", "info");
+        if (!isConfirmed) return;
         
         try {
             const res = await fetch('actions/restore_staff.php', {
@@ -365,9 +520,11 @@ include 'includes/header.php';
                 body: JSON.stringify({ admin_id: id })
             });
             const data = await res.json();
-            if (data.status === 'success') window.location.reload();
-            else alert("Error: " + data.message);
-        } catch (e) { alert("Network Error"); }
+            if (data.status === 'success') {
+                customAlert("Account restored.", "Success", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else customAlert("Error: " + data.message, "Error", "error");
+        } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 </script>
 
