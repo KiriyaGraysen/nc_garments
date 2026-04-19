@@ -133,7 +133,7 @@ include 'includes/header.php';
             </form>
 
             <button onclick="exportLedger('<?= $view ?>')" class="w-full md:w-auto bg-pink-600 hover:bg-pink-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-md shadow-pink-600/20 flex items-center justify-center gap-2 focus:outline-none shrink-0">
-                <i class="fa-solid fa-file-csv"></i> Export Data (.csv)
+            <i class="fa-solid fa-file-excel text-lg"></i> Export to Excel
             </button>
         </div>
     </div>

@@ -165,7 +165,7 @@ include 'includes/header.php';
                     <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1 transition-colors duration-500">Welcome back, <?= htmlspecialchars($first_name) ?>. Here is what's happening today.</p>
                 </div>
                 <div class="flex gap-3">
-                    <a href="reports.php" class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    <a href="actions/download_dashboard_report.php" target="_blank" class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500">
                         <i class="fa-solid fa-download text-pink-600 dark:text-pink-500"></i> Download Report
                     </a>
                 </div>
