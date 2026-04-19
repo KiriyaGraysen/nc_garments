@@ -119,7 +119,7 @@ include 'includes/header.php';
         <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
             <div class="relative w-full group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-                <input type="text" id="search-input" placeholder="Search project name, client, or ID..." 
+                <input type="text" id="search-input" placeholder="Search project name, client, or ID..." autocomplete="off" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly');"
                        class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
             </div>
             
@@ -141,11 +141,11 @@ include 'includes/header.php';
             $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
         ?>
 
-        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800 shrink-0">
             <a href="?view=active&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 0 ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-layer-group mr-1.5"></i> Active Projects
             </a>
-            <a href="?view=archived&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 1 ? $active_tab : $inactive_tab ?>">
+            <a href="?view=archived&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 1 ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-box-archive mr-1.5"></i> Archived
             </a>
         </div>
@@ -245,67 +245,58 @@ include 'includes/header.php';
                                     <div class="text-[11px] font-bold ' . $profit_color . ' tracking-wide mt-0.5 uppercase">Est. Profit: ₱ ' . number_format($est_profit, 2) . '</div>
                                 </td>
                                 
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center justify-center gap-2">';
+                                <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-1.5">';
+                                
+                                // 🚨 UPDATED: Tooltips applied to Action Buttons
+                                if ($time['is_overdue'] || !empty($project['overdue_notes'])) {
+                                    $note_icon = empty($project['overdue_notes']) ? 'fa-regular fa-comment' : 'fa-solid fa-comment';
+                                    $btn_border = empty($project['overdue_notes']) ? 'border-gray-200 dark:border-zinc-700 text-gray-400 hover:border-amber-300 hover:text-amber-500' : 'border-amber-200 dark:border-amber-500/50 text-amber-500';
                                     
-                                    // NOTES BUTTON
-                                    if ($time['is_overdue'] || !empty($project['overdue_notes'])) {
-                                        $note_icon = empty($project['overdue_notes']) ? 'fa-regular fa-comment' : 'fa-solid fa-comment';
-                                        $btn_border = empty($project['overdue_notes']) ? 'border-gray-200 dark:border-zinc-700 text-gray-400 hover:border-amber-300 hover:text-amber-500' : 'border-amber-200 dark:border-amber-500/50 text-amber-500';
-                                        
-                                        echo '<button onclick="event.stopPropagation(); openNotesModal('.$project['project_id'].', \''.addslashes($project['overdue_notes'] ?? '').'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border '.$btn_border.' rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                    echo '<button onclick="event.stopPropagation(); openNotesModal('.$project['project_id'].', \''.addslashes($project['overdue_notes'] ?? '').'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border '.$btn_border.' rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                                 <i class="'.$note_icon.' transition-colors"></i>
-                                                
-                                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                                                <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
                                                     Project Notes
-                                                    <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                                    <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
                                                 </span>
-                                              </button>';
-                                    }
+                                          </button>';
+                                }
 
-                                    // EDIT BUTTON
-                                    echo '<button onclick="event.stopPropagation(); viewProjectDetails(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                            <i class="fa-solid fa-pen-to-square transition-colors"></i>
-                                            
-                                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                                Edit Details
-                                                <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
-                                            </span>
-                                        </button>';
-                                            
-                                    // COSTING BUTTON
-                                    echo '<button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ', ' . $is_internal_js . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-pink-300 text-gray-400 hover:text-pink-600 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                            <i class="fa-solid fa-file-invoice-dollar transition-colors"></i>
-                                            
-                                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                                Costing
-                                                <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
-                                            </span>
-                                        </button>';
+                                echo '<button onclick="event.stopPropagation(); viewProjectDetails(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                              Edit Details
+                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                          </span>
+                                      </button>';
+                                      
+                                echo '<button onclick="event.stopPropagation(); openCostingModal(' . $project['project_id'] . ', \'' . addslashes($project_name) . '\', ' . $agreed_price . ', ' . $is_internal_js . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-pink-300 text-gray-400 hover:text-pink-600 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-file-invoice-dollar transition-colors"></i>
+                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                              Costing
+                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                          </span>
+                                      </button>';
 
-                                    // ARCHIVE / RESTORE BUTTON
-                                    if ($view_archived === 0) {
-                                        echo '<button onclick="event.stopPropagation(); archiveProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                                  <i class="fa-solid fa-box-archive transition-colors"></i>
-                                                  
-                                                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                                      Archive
-                                                      <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
-                                                  </span>
-                                              </button>';
-                                    } else {
-                                        echo '<button onclick="event.stopPropagation(); restoreProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                                  <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
-                                                  
-                                                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                                      Restore
-                                                      <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
-                                                  </span>
-                                              </button>';
-                                    }
+                                if ($view_archived === 0) {
+                                    echo '<button onclick="event.stopPropagation(); archiveProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-box-archive transition-colors"></i>
+                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                  Archive
+                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                              </span>
+                                          </button>';
+                                } else {
+                                    echo '<button onclick="event.stopPropagation(); restoreProject(' . $project['project_id'] . ')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
+                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                  Restore
+                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                              </span>
+                                          </button>';
+                                }
 
-                                    echo '  </div>
-                                        </td>
+                                echo '  </div>
+                                </td>
                             </tr>
                         ';
                     }
@@ -705,11 +696,7 @@ include 'includes/header.php';
 </main>
 
 <script>
-    // ==========================================
-    // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
-    // ==========================================
-    
-    // 🚨 BUG FIX: Global timers to prevent modals from hiding each other
+    // --- GLOBAL MODAL OVERRIDES ---
     let globalAlertTimeout;
     let globalConfirmTimeout;
 
@@ -724,7 +711,6 @@ include 'includes/header.php';
         msgEl.textContent = message;
         titleEl.textContent = title;
 
-        // Theme the alert based on type
         iconWrapper.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border ";
         if (type === "error") {
             iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
@@ -737,7 +723,7 @@ include 'includes/header.php';
             icon.className = "fa-solid fa-circle-info";
         }
 
-        clearTimeout(globalAlertTimeout); // Prevent previous close animations from hiding this
+        clearTimeout(globalAlertTimeout);
         modal.classList.remove('hidden');
         setTimeout(() => {
             box.classList.remove('scale-95', 'opacity-0');
@@ -782,7 +768,7 @@ include 'includes/header.php';
                 btnOk.className += "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20";
             }
 
-            clearTimeout(globalConfirmTimeout); // Prevent previous close animations from hiding this
+            clearTimeout(globalConfirmTimeout); 
             modal.classList.remove('hidden');
             setTimeout(() => {
                 box.classList.remove('scale-95', 'opacity-0');
@@ -813,7 +799,7 @@ include 'includes/header.php';
 
     window.alert = customAlert;
 
-    // --- Pagination & Search Logic ---
+    // --- Search & Pagination Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('project-tbody');
     const allRows = Array.from(tbody.querySelectorAll('tr.project-row'));
@@ -846,18 +832,27 @@ include 'includes/header.php';
         });
 
         const existingEmptyRow = document.getElementById('js-empty-state');
+        const phpEmpty = document.getElementById('php-empty-state');
+
+        // 🚨 FIXED: Smart Empty State Logic
         if (totalItems === 0) {
-            if (!existingEmptyRow) {
-                tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No projects found matching your search.</td></tr>`);
+            if (phpEmpty && searchTerm === '') {
+                // Database is empty
+                phpEmpty.style.display = '';
+                if (existingEmptyRow) existingEmptyRow.style.display = 'none';
             } else {
-                existingEmptyRow.style.display = '';
+                // Search is empty
+                if (phpEmpty) phpEmpty.style.display = 'none';
+                if (!existingEmptyRow) {
+                    tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No projects found matching your search.</td></tr>`);
+                } else {
+                    existingEmptyRow.style.display = '';
+                }
             }
         } else {
             if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+            if (phpEmpty) phpEmpty.style.display = 'none';
         }
-
-        const phpEmpty = document.getElementById('php-empty-state');
-        if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
 
         renderPagination(totalItems, totalPages);
     }
@@ -1290,9 +1285,8 @@ include 'includes/header.php';
         if ((newProgress === 'sampling' || newProgress === 'cutting') && oldProgress === 'not started') {
             const isConfirmed = await customConfirm(`You are moving the project to '${newProgress}'.\n\nDo you want to officially start this project and deduct the materials from the warehouse inventory?`, "Start Production");
             if (isConfirmed) {
-                // 🚨 BUG FIX: Added small delay so the first modal closes smoothly before next opens
                 await new Promise(resolve => setTimeout(resolve, 250)); 
-                await startProjectProduction(projectId, false, newProgress); // Added AWAIT!
+                await startProjectProduction(projectId, false, newProgress);
             } else {
                 window.location.reload(); 
             }
@@ -1619,9 +1613,8 @@ include 'includes/header.php';
                 );
 
                 if (isConfirmed) {
-                    // 🚨 Added tiny delay so second confirm modal closes smoothly before processing
                     await new Promise(resolve => setTimeout(resolve, 250));
-                    await startProjectProduction(projectId, true, targetPhase); // 🚨 Added AWAIT!
+                    await startProjectProduction(projectId, true, targetPhase);
                 } else {
                     window.location.reload(); 
                 }
