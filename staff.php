@@ -308,6 +308,7 @@ include 'includes/header.php';
                             <option value="superadmin">Superadmin</option>
                         <?php endif; ?>
                     </select>
+                    <p id="role_warning" class="text-[10px] text-gray-500 mt-1 hidden italic">You cannot edit your own system role.</p>
                 </div>
 
                 <div id="new_account_notice" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-xl p-3 flex gap-3">
@@ -596,12 +597,26 @@ include 'includes/header.php';
         updateTable();
     }
 
-    // --- STAFF MODAL LOGIC (NO USERNAME) ---
+    // --- STAFF MODAL LOGIC ---
     function openStaffModal(id = '', name = '', email = '', role = 'staff') {
         document.getElementById('staff_id').value = id;
         document.getElementById('staff_name').value = name;
         document.getElementById('staff_email').value = email;
         document.getElementById('staff_role').value = role;
+        
+        const roleSelect = document.getElementById('staff_role');
+        const roleWarning = document.getElementById('role_warning');
+        
+        // 🚨 FIX: Changed === to == so it matches regardless of Number vs String
+        if (id !== '' && id == CURRENT_USER_ID) {
+            roleSelect.disabled = true;
+            roleSelect.classList.add('opacity-60', 'cursor-not-allowed');
+            roleWarning.classList.remove('hidden');
+        } else {
+            roleSelect.disabled = false;
+            roleSelect.classList.remove('opacity-60', 'cursor-not-allowed');
+            roleWarning.classList.add('hidden');
+        }
         
         if (id) {
             document.getElementById('modal_title').textContent = "Edit Staff Account";
@@ -619,25 +634,16 @@ include 'includes/header.php';
     }
 
     async function saveStaff() {
+        const roleSelect = document.getElementById('staff_role');
         const payload = {
             admin_id: document.getElementById('staff_id').value,
             full_name: document.getElementById('staff_name').value,
             email: document.getElementById('staff_email').value,
-            role: document.getElementById('staff_role').value
+            // 🚨 Use the current session role if they are editing themselves (since dropdown is disabled)
+            role: roleSelect.disabled ? CURRENT_USER_ROLE : roleSelect.value 
         };
 
         if (!payload.full_name || !payload.email) return customAlert("Please fill all required fields.", "Missing Fields", "error");
-
-        // 🚨 SUPERADMIN TRANSFER WARNING LOGIC
-        if (CURRENT_USER_ROLE === 'superadmin' && payload.role === 'superadmin' && payload.admin_id !== '' && payload.admin_id !== CURRENT_USER_ID) {
-            const confirmed = await customConfirm(
-                "You are about to transfer your Superadmin privileges to this user. Doing so will demote your account to an Admin.\n\nThis action cannot be undone by you.", 
-                "Transfer Superadmin Role?", 
-                "Yes, Transfer Role", 
-                "danger"
-            );
-            if (!confirmed) return;
-        }
 
         try {
             const res = await fetch('actions/save_staff.php', {

@@ -232,7 +232,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <button onclick="toggleNotifications()" class="relative text-gray-400 hover:text-pink-600 transition-colors cursor-pointer focus:outline-none">
                         <i class="fa-regular fa-bell text-xl"></i>
                         <?php if ($notif_count > 0): ?>
-                            <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pink-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-zinc-900">
+                            <span class="absolute -top-2 -right-3 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-pink-600 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-zinc-900">
                                 <?= $notif_count > 9 ? '9+' : $notif_count ?>
                             </span>
                         <?php endif; ?>
