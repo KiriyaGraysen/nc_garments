@@ -12,16 +12,25 @@ $admin_name = $_SESSION['full_name'] ?? 'Admin';
 $first_name = explode(' ', trim($admin_name))[0];
 
 // ========================================================
-// 1. TOP STATS CALCULATIONS
+// 1. TOP STATS CALCULATIONS (Now successfully merging Retail & Projects)
 // ========================================================
 
 // Total Sales (Last 30 Days)
+$total_sales = 0;
 $sales_stmt = $conn->query("SELECT COALESCE(SUM(amount_paid), 0) as total FROM payment WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
-$total_sales = $sales_stmt->fetch_assoc()['total'];
+if ($sales_stmt) {
+    $total_sales += $sales_stmt->fetch_assoc()['total'];
+}
+
+// Total Sales (Last 30 Days) - Retail Storefront
+$retail_stmt = $conn->query("SELECT COALESCE(SUM(total_amount), 0) as total FROM retail_sale WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+if ($retail_stmt) {
+    $total_sales += $retail_stmt->fetch_assoc()['total'];
+}
 
 // Active Orders
 $active_stmt = $conn->query("SELECT COUNT(*) as count FROM project WHERE status = 'active' AND is_archived = 0");
-$active_orders = $active_stmt->fetch_assoc()['count'];
+$active_orders = $active_stmt->fetch_assoc()['count'] ?? 0;
 
 // Total Receivables
 $rec_stmt = $conn->query("
@@ -29,7 +38,7 @@ $rec_stmt = $conn->query("
         (SELECT COALESCE(SUM(agreed_price), 0) FROM project WHERE status = 'active' AND is_archived = 0) - 
         (SELECT COALESCE(SUM(amount_paid), 0) FROM payment pay JOIN project p ON pay.project_id = p.project_id WHERE p.status = 'active' AND p.is_archived = 0) AS total_receivables
 ");
-$receivables = $rec_stmt->fetch_assoc()['total_receivables'];
+$receivables = $rec_stmt->fetch_assoc()['total_receivables'] ?? 0;
 
 // Low Stock Alerts
 $low_stmt = $conn->query("
@@ -37,11 +46,11 @@ $low_stmt = $conn->query("
         (SELECT COUNT(*) FROM premade_product WHERE current_stock <= min_stock_alert AND is_archived = 0) +
         (SELECT COUNT(*) FROM raw_material WHERE current_stock <= min_stock_alert AND is_archived = 0) AS total_low
 ");
-$low_stock = $low_stmt->fetch_assoc()['total_low'];
+$low_stock = $low_stmt->fetch_assoc()['total_low'] ?? 0;
 
 
 // ========================================================
-// 2. CHART DATA (LAST 6 MONTHS REVENUE VS PROFIT)
+// 2. CHART DATA (SIDE-BY-SIDE: REVENUE VS COST)
 // ========================================================
 $months = [];
 for ($i = 5; $i >= 0; $i--) {
@@ -53,16 +62,28 @@ for ($i = 5; $i >= 0; $i--) {
     ];
 }
 
+// Combine Custom Order Payments and Retail Sales into one Revenue query
 $chart_rev = $conn->query("
-    SELECT DATE_FORMAT(payment_date, '%Y-%m') as month_year, SUM(amount_paid) as total_rev
-    FROM payment
-    WHERE payment_date >= DATE_SUB(LAST_DAY(CURDATE() - INTERVAL 6 MONTH), INTERVAL 0 DAY)
+    SELECT month_year, SUM(total_rev) as final_rev FROM (
+        SELECT DATE_FORMAT(payment_date, '%Y-%m') as month_year, SUM(amount_paid) as total_rev
+        FROM payment
+        WHERE payment_date >= DATE_SUB(LAST_DAY(CURDATE() - INTERVAL 6 MONTH), INTERVAL 0 DAY)
+        GROUP BY month_year
+        UNION ALL
+        SELECT DATE_FORMAT(sale_date, '%Y-%m') as month_year, SUM(total_amount) as total_rev
+        FROM retail_sale
+        WHERE sale_date >= DATE_SUB(LAST_DAY(CURDATE() - INTERVAL 6 MONTH), INTERVAL 0 DAY)
+        GROUP BY month_year
+    ) as combined_rev
     GROUP BY month_year
 ");
-while ($row = $chart_rev->fetch_assoc()) {
-    if (isset($months[$row['month_year']])) $months[$row['month_year']]['revenue'] += $row['total_rev'];
+if ($chart_rev) {
+    while ($row = $chart_rev->fetch_assoc()) {
+        if (isset($months[$row['month_year']])) $months[$row['month_year']]['revenue'] += $row['final_rev'];
+    }
 }
 
+// Fetch Costs (Tracks Project materials)
 $chart_cost = $conn->query("
     SELECT DATE_FORMAT(p.created_at, '%Y-%m') as month_year, SUM(pb.total_cost) as total_cost
     FROM project p
@@ -70,13 +91,17 @@ $chart_cost = $conn->query("
     WHERE p.created_at >= DATE_SUB(LAST_DAY(CURDATE() - INTERVAL 6 MONTH), INTERVAL 0 DAY)
     GROUP BY month_year
 ");
-while ($row = $chart_cost->fetch_assoc()) {
-    if (isset($months[$row['month_year']])) $months[$row['month_year']]['cost'] += $row['total_cost'];
+if ($chart_cost) {
+    while ($row = $chart_cost->fetch_assoc()) {
+        if (isset($months[$row['month_year']])) $months[$row['month_year']]['cost'] += $row['total_cost'];
+    }
 }
 
+// Find max value between revenue and cost to scale the chart dynamically
 $max_val = 1; 
 foreach ($months as $m) {
-    if ($m['revenue'] > $max_val) $max_val = $m['revenue'];
+    $month_max = max($m['revenue'], $m['cost']);
+    if ($month_max > $max_val) $max_val = $month_max;
 }
 
 // ========================================================
@@ -92,7 +117,7 @@ $deadlines_stmt = $conn->query("
     LIMIT 3
 ");
 
-$remaining_projects = max(0, $active_orders - $deadlines_stmt->num_rows);
+$remaining_projects = max(0, $active_orders - ($deadlines_stmt ? $deadlines_stmt->num_rows : 0));
 
 $progress_percentages = [
     'not started' => 0, 'sampling' => 15, 'cutting' => 30, 
@@ -114,16 +139,18 @@ $all_deadlines_stmt = $conn->query("
 ");
 
 $calendar_projects = [];
-while ($row = $all_deadlines_stmt->fetch_assoc()) {
-    $date_key = date('Y-m-d', strtotime($row['due_date']));
-    $calendar_projects[$date_key][] = $row; // Group projects by exact due date
+if ($all_deadlines_stmt) {
+    while ($row = $all_deadlines_stmt->fetch_assoc()) {
+        $date_key = date('Y-m-d', strtotime($row['due_date']));
+        $calendar_projects[$date_key][] = $row; 
+    }
 }
 
 $page_title = "Dashboard | NC Garments";
 include 'includes/header.php'; 
 ?>
 
-        <main class="flex-1 bg-gray-50 dark:bg-zinc-950 p-8 overflow-y-auto transition-colors duration-500 font-sans relative">
+        <main class="flex-1 bg-gray-50 dark:bg-zinc-950 p-4 md:p-8 overflow-y-auto transition-colors duration-500 font-sans relative">
         
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
@@ -227,12 +254,12 @@ include 'includes/header.php';
                     <div class="flex justify-between items-center mb-6">
                         <div>
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Revenue Overview</h3>
-                            <p class="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">Gross sales vs. Profit margin (Last 6 Months)</p>
+                            <p class="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">Gross Sales vs. Material Cost (Last 6 Months)</p>
                         </div>
                         <a href="reports.php" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-zinc-800 transition-colors focus:outline-none"><i class="fa-solid fa-ellipsis"></i></a>
                     </div>
                     
-                    <div class="flex-grow flex items-end gap-4 h-64 pt-4 border-b border-gray-100 dark:border-zinc-800 pb-2">
+                    <div class="flex-grow flex items-end gap-2 sm:gap-4 h-64 pt-12 border-b border-gray-100 dark:border-zinc-800 pb-2">
                         <?php 
                         $counter = 0;
                         $total_months = count($months);
@@ -240,35 +267,54 @@ include 'includes/header.php';
                             $counter++;
                             $rev = $m['revenue'];
                             $cost = $m['cost'];
-                            $profit = max(0, $rev - $cost);
                             
-                            $height_pct = ($max_val > 0) ? ($rev / $max_val) * 100 : 0;
-                            if ($height_pct < 5 && $rev > 0) $height_pct = 5;
+                            // Calculate heights for side-by-side bars relative to the global max
+                            $rev_h = ($max_val > 0) ? ($rev / $max_val) * 100 : 0;
+                            $cost_h = ($max_val > 0) ? ($cost / $max_val) * 100 : 0;
                             
-                            $inner_height_pct = ($rev > 0) ? ($profit / $rev) * 100 : 0;
-                            $label = $rev >= 1000 ? round($rev / 1000, 1) . 'k' : $rev;
+                            // Give tiny visual bumps to 0 values so they don't completely vanish
+                            if ($rev_h < 2 && $rev > 0) $rev_h = 2;
+                            if ($cost_h < 2 && $cost > 0) $cost_h = 2;
+                            
                             $is_current = ($counter === $total_months);
                         ?>
-                            <div class="flex-1 flex flex-col justify-end items-center group cursor-pointer" title="Revenue: ₱<?= number_format($rev,2) ?> | Cost: ₱<?= number_format($cost,2) ?>">
-                                <span class="text-xs <?= $is_current ? 'text-pink-600 dark:text-pink-400 font-extrabold' : 'text-transparent group-hover:text-gray-600 dark:group-hover:text-zinc-300 font-bold' ?> mb-2 transition-colors">₱<?= $label ?></span>
+                            <div class="flex-1 flex flex-col justify-end items-center h-full">
                                 
-                                <div class="w-full max-w-[40px] <?= $is_current ? 'bg-pink-200 dark:bg-pink-900/60 border-2 border-pink-500' : 'bg-pink-100 dark:bg-pink-900/20 group-hover:bg-pink-200 dark:group-hover:bg-pink-900/40' ?> rounded-t-lg relative transition-colors" style="height: <?= $height_pct ?>%;">
-                                    <div class="absolute bottom-0 w-full <?= $is_current ? 'bg-pink-600 dark:bg-pink-500' : 'bg-pink-500 dark:bg-pink-600' ?> rounded-t-sm transition-all" style="height: <?= $inner_height_pct ?>%;"></div>
+                                <div class="w-full flex justify-center items-end gap-1 sm:gap-2 flex-grow transition-colors h-full">
+                                    
+                                    <div class="w-1/2 max-w-[32px] h-full flex items-end justify-center relative group/rev">
+                                        <span class="absolute mb-2 opacity-0 group-hover/rev:opacity-100 transition-opacity text-[10px] font-bold text-white bg-gray-900 dark:bg-black px-2.5 py-1.5 rounded-md whitespace-nowrap z-50 pointer-events-none shadow-lg flex flex-col items-center" style="bottom: <?= $rev_h ?>%;">
+                                            ₱ <?= number_format($rev, 2) ?>
+                                            <span class="text-[8px] font-medium text-gray-400 uppercase tracking-widest mt-0.5">Revenue</span>
+                                            <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                        </span>
+                                        <div class="w-full <?= $is_current ? 'bg-pink-600 dark:bg-pink-500' : 'bg-pink-400 dark:bg-pink-700' ?> rounded-t-sm transition-all duration-300 group-hover/rev:opacity-80" style="height: <?= $rev_h ?>%;"></div>
+                                    </div>
+                                    
+                                    <div class="w-1/2 max-w-[32px] h-full flex items-end justify-center relative group/cost">
+                                        <span class="absolute mb-2 opacity-0 group-hover/cost:opacity-100 transition-opacity text-[10px] font-bold text-white bg-gray-900 dark:bg-black px-2.5 py-1.5 rounded-md whitespace-nowrap z-50 pointer-events-none shadow-lg flex flex-col items-center" style="bottom: <?= $cost_h ?>%;">
+                                            ₱ <?= number_format($cost, 2) ?>
+                                            <span class="text-[8px] font-medium text-pink-300 uppercase tracking-widest mt-0.5">Material Cost</span>
+                                            <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                                        </span>
+                                        <div class="w-full bg-pink-200 dark:bg-pink-900/50 rounded-t-sm transition-all duration-300 group-hover/cost:opacity-80" style="height: <?= $cost_h ?>%;"></div>
+                                    </div>
+                                    
                                 </div>
                                 
-                                <span class="text-xs <?= $is_current ? 'text-pink-600 dark:text-pink-400 font-extrabold' : 'text-gray-500 dark:text-zinc-500 font-bold' ?> mt-3 uppercase"><?= $m['label'] ?></span>
+                                <span class="text-[10px] sm:text-xs <?= $is_current ? 'text-pink-600 dark:text-pink-400 font-extrabold' : 'text-gray-500 dark:text-zinc-500 font-bold' ?> mt-3 uppercase"><?= $m['label'] ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>
                     
                     <div class="flex justify-center gap-6 mt-5">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-pink-200 dark:bg-pink-900/60 rounded-full"></div>
-                            <span class="text-xs text-gray-600 dark:text-zinc-400 font-bold uppercase tracking-wider">Gross Cost</span>
+                            <div class="w-3 h-3 bg-pink-600 dark:bg-pink-500 rounded-full"></div>
+                            <span class="text-xs text-gray-600 dark:text-zinc-400 font-bold uppercase tracking-wider">Gross Revenue</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-pink-600 dark:bg-pink-500 rounded-full"></div>
-                            <span class="text-xs text-gray-600 dark:text-zinc-400 font-bold uppercase tracking-wider">Net Profit</span>
+                            <div class="w-3 h-3 bg-pink-200 dark:bg-pink-900/50 rounded-full"></div>
+                            <span class="text-xs text-gray-600 dark:text-zinc-400 font-bold uppercase tracking-wider">Material Cost</span>
                         </div>
                     </div>
                 </div>
@@ -283,39 +329,39 @@ include 'includes/header.php';
     
                     <div class="space-y-4 flex-grow">
                         <?php 
-                        if ($deadlines_stmt->num_rows === 0) {
+                        if (!$deadlines_stmt || $deadlines_stmt->num_rows === 0) {
                             echo '<div class="text-center text-sm text-gray-500 py-8 italic">No upcoming deadlines.</div>';
-                        }
-                        
-                        while ($project = $deadlines_stmt->fetch_assoc()): 
-                            $due_date = new DateTime($project['due_date']);
-                            $month = strtoupper($due_date->format('M'));
-                            $day = $due_date->format('d');
-                            $pct = $progress_percentages[$project['progress']] ?? 0;
-                            
-                            $today = new DateTime('today');
-                            $due_date->setTime(0, 0, 0); 
-                            $diff = $today->diff($due_date);
-                            $days_left = $diff->invert ? -$diff->days : $diff->days;
-                            
-                            if ($days_left <= 0) { $color = 'rose'; } 
-                            elseif ($days_left <= 7) { $color = 'amber'; } 
-                            else { $color = 'emerald'; }
-                        ?>
-                        <div class="flex gap-4 group cursor-pointer items-center" onclick="window.location.href='projects.php'">
-                            <div class="flex flex-col items-center min-w-[3rem]">
-                                <span class="text-[10px] font-extrabold text-<?= $color ?>-500 tracking-wider"><?= $month ?></span>
-                                <span class="text-2xl font-extrabold text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-500 transition-colors"><?= $day ?></span>
-                            </div>
-                            <div class="flex-grow bg-<?= $color ?>-50/50 dark:bg-<?= $color ?>-900/10 border border-<?= $color ?>-100 dark:border-<?= $color ?>-900/30 rounded-xl p-3.5 transition-colors">
-                                <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-0.5 truncate max-w-[200px]"><?= htmlspecialchars($project['project_name']) ?></h4>
-                                <p class="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-3 truncate max-w-[200px]"><?= htmlspecialchars($project['client_name']) ?> (<?= htmlspecialchars($project['quantity']) ?> pcs)</p>
-                                <div class="w-full bg-gray-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                                    <div class="bg-<?= $color ?>-500 h-1.5 rounded-full" style="width: <?= $pct ?>%"></div>
+                        } else {
+                            while ($project = $deadlines_stmt->fetch_assoc()): 
+                                $due_date = new DateTime($project['due_date']);
+                                $month = strtoupper($due_date->format('M'));
+                                $day = $due_date->format('d');
+                                $pct = $progress_percentages[$project['progress']] ?? 0;
+                                
+                                $today = new DateTime('today');
+                                $due_date->setTime(0, 0, 0); 
+                                $diff = $today->diff($due_date);
+                                $days_left = $diff->invert ? -$diff->days : $diff->days;
+                                
+                                if ($days_left <= 0) { $color = 'rose'; } 
+                                elseif ($days_left <= 7) { $color = 'amber'; } 
+                                else { $color = 'emerald'; }
+                            ?>
+                            <div class="flex gap-4 group cursor-pointer items-center" onclick="window.location.href='projects.php'">
+                                <div class="flex flex-col items-center min-w-[3rem]">
+                                    <span class="text-[10px] font-extrabold text-<?= $color ?>-500 tracking-wider"><?= $month ?></span>
+                                    <span class="text-2xl font-extrabold text-gray-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-500 transition-colors"><?= $day ?></span>
+                                </div>
+                                <div class="flex-grow bg-<?= $color ?>-50/50 dark:bg-<?= $color ?>-900/10 border border-<?= $color ?>-100 dark:border-<?= $color ?>-900/30 rounded-xl p-3.5 transition-colors">
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-0.5 truncate max-w-[200px]"><?= htmlspecialchars($project['project_name']) ?></h4>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-3 truncate max-w-[200px]"><?= htmlspecialchars($project['client_name']) ?> (<?= htmlspecialchars($project['quantity']) ?> pcs)</p>
+                                    <div class="w-full bg-gray-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-<?= $color ?>-500 h-1.5 rounded-full" style="width: <?= $pct ?>%"></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <?php endwhile; ?>
+                            <?php endwhile; 
+                        } ?>
                     </div>
                     
                     <?php if ($remaining_projects > 0): ?>
@@ -394,7 +440,7 @@ include 'includes/header.php';
             
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             
-            let dateCursor = new Date(); // Start at current date
+            let dateCursor = new Date(); 
             let currentMonth = dateCursor.getMonth();
             let currentYear = dateCursor.getFullYear();
             let selectedDateStr = null;
@@ -402,8 +448,6 @@ include 'includes/header.php';
             function openTimelineModal() {
                 document.getElementById('timeline-modal').classList.remove('hidden');
                 renderCalendar(currentMonth, currentYear);
-                
-                // Automatically select today if there are projects
                 const todayStr = getLocalYYYYMMDD(new Date());
                 selectDate(todayStr, true);
             }
@@ -419,7 +463,6 @@ include 'includes/header.php';
                 renderCalendar(currentMonth, currentYear);
             }
             
-            // Helper to prevent timezone shifting issues
             function getLocalYYYYMMDD(dateObj) {
                 const year = dateObj.getFullYear();
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -434,15 +477,12 @@ include 'includes/header.php';
 
                 const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
-                
                 const todayStr = getLocalYYYYMMDD(new Date());
 
-                // Blank cells for previous month
                 for (let i = 0; i < firstDay; i++) {
                     grid.innerHTML += `<div class="rounded-xl border border-transparent"></div>`;
                 }
 
-                // Actual days
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateObj = new Date(year, month, day);
                     const dateStr = getLocalYYYYMMDD(dateObj);
@@ -463,7 +503,6 @@ include 'includes/header.php';
                         baseClasses += "bg-transparent text-gray-500 dark:text-zinc-500 border-gray-100 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-800 ";
                     }
 
-                    // Dot indicator
                     const dotHtml = hasProjects && !isSelected ? `<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full ${isToday ? 'bg-pink-500' : 'bg-pink-500'}"></span>` : '';
 
                     grid.innerHTML += `
@@ -477,17 +516,16 @@ include 'includes/header.php';
 
             function selectDate(dateStr, isAuto = false) {
                 selectedDateStr = dateStr;
-                renderCalendar(currentMonth, currentYear); // Re-render to highlight selection
+                renderCalendar(currentMonth, currentYear); 
 
                 const detailsPane = document.getElementById('calendar-details');
                 const projects = calendarData[dateStr] || [];
                 
-                // Format display date
-                const dObj = new Date(dateStr + "T00:00:00"); // Force local parsing
+                const dObj = new Date(dateStr + "T00:00:00"); 
                 const displayDate = dObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
                 if (projects.length === 0) {
-                    if(isAuto) return; // Don't show empty state if auto-selecting today
+                    if(isAuto) return; 
                     detailsPane.innerHTML = `
                         <div class="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-50">
                             <i class="fa-regular fa-face-smile text-4xl"></i>
