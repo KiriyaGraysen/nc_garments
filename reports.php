@@ -3,7 +3,7 @@ require_once('config/database.php');
 
 // SECURITY KICK-OUT
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
-    header("Location: index.php");
+    header("Location: access_denied.php");
     exit();
 }
 

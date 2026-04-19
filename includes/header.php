@@ -320,7 +320,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </div>
                 
                         <div class="py-1 border-t border-gray-50 dark:border-zinc-800/50 bg-gray-50/50 dark:bg-zinc-950/50">
-                            <a href="../actions/logout.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                            <a href="actions/logout.php" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
                                 <i class="fa-solid fa-right-from-bracket w-4 text-center"></i> Secure Logout
                             </a>
                         </div>
@@ -332,6 +332,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <div id="manual-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeManualModal()"></div>
             <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800">
+                
                 <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-book-open text-pink-600 mr-2"></i> System User Manual</h3>
                     <div class="flex gap-3">
@@ -343,9 +344,26 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         </button>
                     </div>
                 </div>
-                <div class="p-0 bg-gray-100 dark:bg-black h-[75vh]">
-                    <iframe src="assets/docs/manual.pdf" class="w-full h-full border-0"></iframe>
+                
+                <div class="p-0 bg-gray-100 dark:bg-black h-[75vh] relative flex flex-col items-center justify-center">
+                    
+                    <iframe src="assets/docs/manual.pdf" class="hidden md:block w-full h-full border-0"></iframe>
+
+                    <div class="md:hidden flex flex-col items-center justify-center text-center p-6 h-full w-full">
+                        <div class="w-20 h-20 bg-pink-100 dark:bg-pink-900/30 text-pink-600 rounded-full flex items-center justify-center text-3xl mb-4 shadow-inner">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">User Manual</h4>
+                        <p class="text-sm text-gray-500 dark:text-zinc-400 mb-6 max-w-xs leading-relaxed">
+                            Mobile browsers block PDFs from loading inside windows. Please open the manual directly to read it.
+                        </p>
+                        <a href="assets/docs/manual.pdf" target="_blank" class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md shadow-pink-600/20 flex items-center gap-2 transition-all">
+                            <i class="fa-solid fa-book-open-reader"></i> Open Native Reader
+                        </a>
+                    </div>
+
                 </div>
+
             </div>
         </div>
 

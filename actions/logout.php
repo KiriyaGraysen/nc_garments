@@ -1,8 +1,10 @@
 <?php
-session_start();
+// actions/logout.php
+
+// 1. Require database first (This automatically starts our secure session!)
 require_once('../config/database.php');
 
-// 1. 🚨 LOG THE LOGOUT ACTIVITY (Must be done BEFORE destroying the session!)
+// 2. 🚨 LOG THE LOGOUT ACTIVITY (Must be done BEFORE destroying the session!)
 if (isset($_SESSION['admin_id'])) {
     $admin_id = $_SESSION['admin_id'];
     $action = 'LOGOUT';
@@ -16,13 +18,21 @@ if (isset($_SESSION['admin_id'])) {
     $log_stmt->close();
 }
 
-// 2. Clear all session variables
-session_unset();
+// 3. Clear all session variables
+$_SESSION = array();
 
-// 3. Destroy the session completely
+// 4. Kill the session cookie completely to prevent hijacking
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+
+// 5. Destroy the session completely
 session_destroy();
 
-// 4. Redirect back to the login screen
+// 6. Redirect back to the login screen
 header("Location: ../login.php");
 exit();
-?>
