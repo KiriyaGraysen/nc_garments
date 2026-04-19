@@ -25,7 +25,7 @@ if ($view === 'archived') {
     }
 }
 
-// 2. Fetch Data (Removed 'username')
+// 2. Fetch Data
 $stmt = $conn->prepare("
     SELECT admin_id, full_name, email, role, status, last_login
     FROM admin
@@ -146,6 +146,12 @@ include 'includes/header.php';
                         $is_current_user = ($staff['admin_id'] == $current_user_id);
                         $row_class = ($view === 'archived' || $status === 'deactivated') ? 'opacity-60 grayscale-[50%]' : '';
                         
+                        // 🚨 RBAC CHECK: Admin looking at Superadmin
+                        $can_edit_this_user = true;
+                        if ($current_user_role === 'admin' && $role === 'superadmin') {
+                            $can_edit_this_user = false;
+                        }
+                        
                         echo '
                             <tr class="staff-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_class . '">
                                 <td class="px-6 py-4">
@@ -183,70 +189,80 @@ include 'includes/header.php';
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-1.5">'; 
                         
+                        // 🚨 RBAC ENFORCEMENT: Output Buttons or Read-Only state
                         if ($view === 'archived') {
-                            echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                      <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
-                                      
-                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                          Restore
-                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
-                                      </span>
-                                  </button>';
-                        } else {
-                            
-                            // EDIT
-                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.$role.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                      <i class="fa-solid fa-pen-to-square transition-colors"></i>
-                                      
-                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                          Edit
-                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
-                                      </span>
-                                  </button>';
-                                  
-                            // RESET PASSWORD
-                            if ($current_user_role === 'superadmin' && !$is_current_user) {
-                                echo '<button onclick="openResetPasswordModal('.$staff['admin_id'].', \''.addslashes($full_name).'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 text-gray-400 hover:text-purple-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                          <i class="fa-solid fa-key transition-colors"></i>
+                            if ($can_edit_this_user) {
+                                echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
                                           
                                           <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                              Reset Password
+                                              Restore
                                               <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
                                           </span>
                                       </button>';
+                            } else {
+                                echo '<span class="text-xs text-gray-400 dark:text-zinc-500 font-medium italic flex items-center h-8"><i class="fa-solid fa-lock text-[10px] mr-1.5"></i> Read Only</span>';
                             }
-                                  
-                            if (!$is_current_user) {
-                                // REVOKE / RESTORE STATUS
-                                if ($status === 'active') {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-rose-300 text-gray-400 hover:text-rose-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                              <i class="fa-solid fa-ban transition-colors"></i>
+                        } else {
+                            
+                            if ($can_edit_this_user) {
+                                // EDIT
+                                echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.$role.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                          
+                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                              Edit
+                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                          </span>
+                                      </button>';
+                                      
+                                // RESET PASSWORD
+                                if ($current_user_role === 'superadmin' && !$is_current_user) {
+                                    echo '<button onclick="openResetPasswordModal('.$staff['admin_id'].', \''.addslashes($full_name).'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 text-gray-400 hover:text-purple-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-key transition-colors"></i>
                                               
                                               <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                                  Revoke Access
-                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
-                                              </span>
-                                          </button>';
-                                } else {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                              <i class="fa-solid fa-unlock-keyhole transition-colors"></i>
-                                              
-                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                                  Restore Access
+                                                  Reset Password
                                                   <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
                                               </span>
                                           </button>';
                                 }
-                                
-                                // ARCHIVE
-                                echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                          <i class="fa-solid fa-box-archive transition-colors"></i>
-                                          
-                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
-                                              Archive
-                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
-                                          </span>
-                                      </button>';
+                                      
+                                if (!$is_current_user) {
+                                    // REVOKE / RESTORE STATUS
+                                    if ($status === 'active') {
+                                        echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-rose-300 text-gray-400 hover:text-rose-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                                  <i class="fa-solid fa-ban transition-colors"></i>
+                                                  
+                                                  <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                      Revoke Access
+                                                      <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                                  </span>
+                                              </button>';
+                                    } else {
+                                        echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                                  <i class="fa-solid fa-unlock-keyhole transition-colors"></i>
+                                                  
+                                                  <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                      Restore Access
+                                                      <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                                  </span>
+                                              </button>';
+                                    }
+                                    
+                                    // ARCHIVE
+                                    echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-box-archive transition-colors"></i>
+                                              
+                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                  Archive
+                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                              </span>
+                                          </button>';
+                                }
+                            } else {
+                                // Locked state for Admin looking at Superadmin
+                                echo '<span class="text-xs text-gray-400 dark:text-zinc-500 font-medium italic flex items-center h-8"><i class="fa-solid fa-lock text-[10px] mr-1.5"></i> Read Only</span>';
                             }
                         }
                         
@@ -287,8 +303,8 @@ include 'includes/header.php';
                     <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">System Role *</label>
                     <select id="staff_role" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
                         <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
                         <?php if ($current_user_role === 'superadmin'): ?>
-                            <option value="admin">Admin</option>
                             <option value="superadmin">Superadmin</option>
                         <?php endif; ?>
                     </select>
@@ -365,6 +381,10 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // 🚨 GLOBALS FOR ROLE CHECKING
+    const CURRENT_USER_ID = "<?php echo $current_user_id; ?>";
+    const CURRENT_USER_ROLE = "<?php echo $current_user_role; ?>";
+
     // --- GLOBAL MODAL OVERRIDES (Alert & Confirm) ---
     function customAlert(message, title = "Notice", type = "info") {
         const modal = document.getElementById('global-alert-modal');
@@ -607,6 +627,17 @@ include 'includes/header.php';
         };
 
         if (!payload.full_name || !payload.email) return customAlert("Please fill all required fields.", "Missing Fields", "error");
+
+        // 🚨 SUPERADMIN TRANSFER WARNING LOGIC
+        if (CURRENT_USER_ROLE === 'superadmin' && payload.role === 'superadmin' && payload.admin_id !== '' && payload.admin_id !== CURRENT_USER_ID) {
+            const confirmed = await customConfirm(
+                "You are about to transfer your Superadmin privileges to this user. Doing so will demote your account to an Admin.\n\nThis action cannot be undone by you.", 
+                "Transfer Superadmin Role?", 
+                "Yes, Transfer Role", 
+                "danger"
+            );
+            if (!confirmed) return;
+        }
 
         try {
             const res = await fetch('actions/save_staff.php', {

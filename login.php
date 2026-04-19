@@ -107,7 +107,7 @@ if (isset($_SESSION['admin_id'])) {
 
     <div id="global-alert-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
             <div class="p-6 text-center">
                 <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-rose-200 dark:border-rose-500/30">
                     <i id="global-alert-icon" class="fa-solid fa-circle-xmark"></i>
