@@ -13,7 +13,7 @@ if (isset($_SESSION['admin_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Access | Needle Class ERP</title>
+    <title>System Access | NC Garments</title>
     <link rel="icon" href="assets/images/icon.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -58,13 +58,14 @@ if (isset($_SESSION['admin_id'])) {
 
         <div class="px-8 pb-10">
             <form id="login-form">
+                
                 <div class="mb-5">
-                    <label for="username" class="block text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">Username</label>
+                    <label for="identifier" class="block text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">Username or Email</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-zinc-500">
                             <i class="fa-solid fa-user text-sm"></i>
                         </span>
-                        <input type="text" id="username" required placeholder="Enter your assigned username" 
+                        <input type="text" id="identifier" required placeholder="Enter username or email address" 
                                class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-300 placeholder-gray-400 dark:placeholder-zinc-600 text-sm">
                     </div>
                 </div>
@@ -104,7 +105,44 @@ if (isset($_SESSION['admin_id'])) {
         </div>
     </div>
 
+    <div id="global-alert-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+            <div class="p-6 text-center">
+                <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-rose-200 dark:border-rose-500/30">
+                    <i id="global-alert-icon" class="fa-solid fa-circle-xmark"></i>
+                </div>
+                <h3 id="global-alert-title" class="text-xl font-bold text-gray-900 dark:text-white mb-2">Login Failed</h3>
+                <p id="global-alert-msg" class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-center">
+                <button onclick="closeGlobalAlert()" class="bg-rose-600 hover:bg-rose-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-rose-600/20 focus:outline-none transition-all w-full">Try Again</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- CUSTOM ALERT LOGIC ---
+        function customAlert(message) {
+            const modal = document.getElementById('global-alert-modal');
+            const box = document.getElementById('global-alert-box');
+            document.getElementById('global-alert-msg').textContent = message;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeGlobalAlert() {
+            const modal = document.getElementById('global-alert-modal');
+            const box = document.getElementById('global-alert-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
         const loginForm = document.getElementById('login-form');
     
         // 1. Listen for the form submission
@@ -112,7 +150,7 @@ if (isset($_SESSION['admin_id'])) {
             event.preventDefault(); 
         
             // 2. Grab the inputs
-            const usernameInput = document.getElementById('username').value;
+            const identifierInput = document.getElementById('identifier').value;
             const passwordInput = document.getElementById('password').value;
             
             const loginBtn = document.getElementById('login-btn');
@@ -127,11 +165,9 @@ if (isset($_SESSION['admin_id'])) {
                 // 4. Send the data to your PHP file in the background
                 const response = await fetch('actions/login.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        username: usernameInput,
+                        identifier: identifierInput, // 🚨 UPDATED payload key
                         password: passwordInput
                     })
                 });
@@ -141,12 +177,12 @@ if (isset($_SESSION['admin_id'])) {
                 if (data.success) {
                     window.location.href = 'index.php'; 
                 } else {
-                    alert(data.message || 'Invalid username or password.');
+                    customAlert(data.message || 'Invalid username or password.');
                     resetButton();
                 }
         
             } catch (error) {
-                alert('System Error: ' + error.message);
+                customAlert('System Error: ' + error.message);
                 resetButton();
             }
         

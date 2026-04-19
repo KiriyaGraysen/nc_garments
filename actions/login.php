@@ -13,21 +13,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $json_data = file_get_contents('php://input');
 $request = json_decode($json_data, true);
 
-$input_username = $request['username'] ?? '';
+// 🚨 UPDATED: Accept 'identifier' which handles both Username or Email
+$input_identifier = $request['identifier'] ?? '';
 $input_password = $request['password'] ?? '';
 
-if (empty($input_username) || empty($input_password)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill in both username and password.']);
+if (empty($input_identifier) || empty($input_password)) {
+    echo json_encode(['success' => false, 'message' => 'Please fill in both username/email and password.']);
     exit();
 }
 
-// 🚨 SECURITY FIX: We MUST ensure the account is active and not archived!
+// 🚨 SECURITY FIX: Check BOTH username OR email, and ensure the account is active/not archived!
 $stmt = $conn->prepare("
     SELECT admin_id, full_name, password_hash, role
     FROM admin
-    WHERE username = ? AND is_archived = 0 AND status = 'active'
+    WHERE (username = ? OR email = ?) AND is_archived = 0 AND status = 'active'
 ");
-$stmt->bind_param("s", $input_username);
+
+// Bind the identifier twice: once for the username check, once for the email check
+$stmt->bind_param("ss", $input_identifier, $input_identifier);
 $stmt->execute();
 $result = $stmt->get_result();
 
