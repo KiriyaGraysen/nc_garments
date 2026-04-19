@@ -95,7 +95,8 @@ include 'includes/header.php';
         <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
             <div class="relative w-full group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-                <input type="text" id="search-input" placeholder="Search by customer name or ID..." 
+                
+                <input type="text" id="search-input" placeholder="Search by customer name or ID..." autocomplete="off" data-lpignore="true" readonly onfocus="this.removeAttribute('readonly');"
                        class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
             </div>
             
@@ -117,7 +118,7 @@ include 'includes/header.php';
             $inactive_tab = "text-gray-500 dark:text-zinc-400 hover:text-gray-900 hover:dark:text-white";
         ?>
 
-        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800">
+        <div class="flex bg-gray-100 dark:bg-zinc-900/80 p-1 rounded-lg w-full lg:w-auto overflow-x-auto transition-colors duration-500 border border-gray-200 dark:border-zinc-800 shrink-0">
             <a href="?view=active&sort=<?= $sort ?>" class="whitespace-nowrap px-4 py-2 text-sm font-bold rounded-md transition-colors duration-500 flex items-center gap-2 <?= $view_archived === 0 ? $active_tab : $inactive_tab ?>">
                 <i class="fa-solid fa-address-book mr-1.5"></i> Active Customers
             </a>
@@ -136,7 +137,7 @@ include 'includes/header.php';
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Contact Information</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Financial Standing</th>
                         <th class="px-6 py-4 text-left text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Latest Activity</th>
-                        <th class="px-6 py-4 text-center text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="customer-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
@@ -150,7 +151,7 @@ include 'includes/header.php';
                         $balance = $cust['total_billed'] - $cust['total_paid'];
                         
                         $badge_class = $balance > 0 ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20';
-                        $badge_text = $balance > 0 ? 'With Balance' : 'Fully Paid';
+                        $badge_text = $balance > 0 ? 'With Balance' : 'Cleared';
                         
                         $latest_date = $cust['latest_payment_date'] ? date('M d, Y', strtotime($cust['latest_payment_date'])) : 'No Payments Yet';
 
@@ -191,37 +192,37 @@ include 'includes/header.php';
                             <td class="px-6 py-4">
                                 <div class="text-[10px] font-bold text-gray-400 dark:text-zinc-500 mt-1 uppercase tracking-wider">'.$latest_date.'</div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <button onclick="event.stopPropagation(); openCustomerModal('.$cust['customer_id'].', \''.addslashes($cust['full_name'] ?? '').'\', \''.addslashes($cust['contact_number'] ?? '').'\', \''.addslashes($cust['address'] ?? '').'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                        <i class="fa-solid fa-pen transition-colors"></i>
-                                        <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                            Edit Customer
-                                            <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
-                                        </span>
-                                    </button>';
-                                
-                        if ($view_archived === 0) {
-                            echo '<button onclick="event.stopPropagation(); archiveCustomer('.$cust['customer_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                      <i class="fa-solid fa-box-archive transition-colors"></i>
-                                      <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                          Archive Customer
-                                          <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                            <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-1.5">';
+                            
+                        // 🚨 UPDATED: Left-aligned tooltips and consistent icon styling
+                        if ($view_archived === 1) {
+                            echo '<button onclick="event.stopPropagation(); restoreCustomer('.$cust['customer_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                      <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
+                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                          Restore
+                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
                                       </span>
                                   </button>';
                         } else {
-                            echo '<button onclick="event.stopPropagation(); restoreCustomer('.$cust['customer_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
-                                      <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
-                                      <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
-                                          Restore Customer
-                                          <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-black"></span>
+                            echo '<button onclick="event.stopPropagation(); openCustomerModal('.$cust['customer_id'].', \''.addslashes($cust['full_name'] ?? '').'\', \''.addslashes($cust['contact_number'] ?? '').'\', \''.addslashes($cust['address'] ?? '').'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                      <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                          Edit
+                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                      </span>
+                                  </button>
+                                  
+                                  <button onclick="event.stopPropagation(); archiveCustomer('.$cust['customer_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                      <i class="fa-solid fa-box-archive transition-colors"></i>
+                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                          Archive
+                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
                                       </span>
                                   </button>';
                         }
 
-                        echo '      </div>
-                                </td>
-                        </tr>';
+                        echo '      </td>
+                                </tr>';
                     }
                     ?>
                 </tbody>
@@ -370,10 +371,7 @@ include 'includes/header.php';
 </div>
 
 <script>
-    // ==========================================
-    // 0. GLOBAL UI OVERRIDES (REPLACING NATIVE ALERTS/CONFIRMS)
-    // ==========================================
-    
+    // --- GLOBAL UI OVERRIDES ---
     function customAlert(message, title = "Notice", type = "info") {
         const modal = document.getElementById('global-alert-modal');
         const box = document.getElementById('global-alert-box');
@@ -392,6 +390,9 @@ include 'includes/header.php';
         } else if (type === "success") {
             iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
             icon.className = "fa-solid fa-circle-check";
+        } else if (type === "warning") {
+            iconWrapper.className += "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30";
+            icon.className = "fa-solid fa-triangle-exclamation";
         } else {
             iconWrapper.className += "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-500/30";
             icon.className = "fa-solid fa-circle-info";
@@ -433,7 +434,7 @@ include 'includes/header.php';
             
             if (type === "danger") {
                 iconWrapper.className += "bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30";
-                icon.className = "fa-solid fa-trash";
+                icon.className = "fa-solid fa-ban"; 
                 btnOk.className += "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20";
             } else if (type === "info") {
                 iconWrapper.className += "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30";
@@ -474,109 +475,117 @@ include 'includes/header.php';
 
     window.alert = customAlert;
 
-    // --- Pagination & Search Logic ---
+    // --- Search & Pagination Logic ---
     const searchInput = document.getElementById('search-input');
     const tbody = document.getElementById('customer-tbody');
-    const allRows = Array.from(tbody.querySelectorAll('tr.customer-row'));
-    const paginationContainer = document.getElementById('pagination-container');
-    const colspanCount = 5;
     
-    let currentPage = 1;
-    const rowsPerPage = 15;
-
-    function updateTable() {
-        const searchTerm = searchInput.value.toLowerCase();
+    if (tbody && searchInput) {
+        const allRows = Array.from(tbody.querySelectorAll('tr.customer-row'));
+        const paginationContainer = document.getElementById('pagination-container');
+        const colspanCount = 5;
         
-        const filteredRows = allRows.filter(row => {
-            const text = row.innerText.toLowerCase();
-            return text.includes(searchTerm);
-        });
+        let currentPage = 1;
+        const rowsPerPage = 15;
 
-        const totalItems = filteredRows.length;
-        const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
-        
-        if (currentPage > totalPages) currentPage = 1;
+        function updateTable() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const filteredRows = allRows.filter(row => {
+                const text = row.innerText.toLowerCase();
+                return text.includes(searchTerm);
+            });
 
-        const startIndex = (currentPage - 1) * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
+            const totalItems = filteredRows.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = 1;
 
-        allRows.forEach(row => row.style.display = 'none');
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
 
-        filteredRows.slice(startIndex, endIndex).forEach(row => {
-            row.style.display = '';
-        });
+            allRows.forEach(row => row.style.display = 'none');
+            filteredRows.slice(startIndex, endIndex).forEach(row => row.style.display = '');
 
-        const existingEmptyRow = document.getElementById('js-empty-state');
-        if (totalItems === 0) {
-            if (!existingEmptyRow) {
-                tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No customers found matching your search.</td></tr>`);
+            const existingEmptyRow = document.getElementById('js-empty-state');
+            const phpEmpty = document.getElementById('php-empty-state');
+
+            // 🚨 FIXED: Smart Empty State Logic (No Double Messages)
+            if (totalItems === 0) {
+                if (phpEmpty && searchTerm === '') {
+                    // Database is empty
+                    phpEmpty.style.display = '';
+                    if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+                } else {
+                    // Search is empty
+                    if (phpEmpty) phpEmpty.style.display = 'none';
+                    if (!existingEmptyRow) {
+                        tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found matching your search.</td></tr>`);
+                    } else {
+                        existingEmptyRow.style.display = '';
+                    }
+                }
             } else {
-                existingEmptyRow.style.display = '';
+                if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+                if (phpEmpty) phpEmpty.style.display = 'none';
             }
-        } else {
-            if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+
+            renderPagination(totalItems, totalPages);
         }
 
-        const phpEmpty = document.getElementById('php-empty-state');
-        if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
+        function renderPagination(totalItems, totalPages) {
+            if (totalItems === 0) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
 
-        renderPagination(totalItems, totalPages);
-    }
+            let html = `
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                    <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
+                        Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="changePage(event, ${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+            `;
 
-    function renderPagination(totalItems, totalPages) {
-        if (totalItems === 0) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        let html = `
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
-                <div class="text-xs font-semibold text-gray-500 dark:text-zinc-400">
-                    Showing <span class="font-bold text-gray-900 dark:text-white">${((currentPage - 1) * rowsPerPage) + 1}</span> to <span class="font-bold text-gray-900 dark:text-white">${Math.min(currentPage * rowsPerPage, totalItems)}</span> of <span class="font-bold text-gray-900 dark:text-white">${totalItems}</span> entries
-                </div>
-                <div class="flex gap-1">
-                    <button onclick="changePage(event, ${currentPage - 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
-        `;
-
-        for (let i = 1; i <= totalPages; i++) {
-            if (totalPages > 7) {
-                 if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            for (let i = 1; i <= totalPages; i++) {
+                if (totalPages > 7) {
+                     if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                         html += makePageBtn(i);
+                     } else if (i === currentPage - 2 || i === currentPage + 2) {
+                         html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
+                     }
+                } else {
                      html += makePageBtn(i);
-                 } else if (i === currentPage - 2 || i === currentPage + 2) {
-                     html += `<span class="px-2 py-1 text-xs text-gray-400 dark:text-zinc-600">...</span>`;
-                 }
-            } else {
-                 html += makePageBtn(i);
+                }
             }
+
+            html += `
+                        <button onclick="changePage(event, ${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            `;
+            paginationContainer.innerHTML = html;
         }
 
-        html += `
-                    <button onclick="changePage(event, ${currentPage + 1})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-zinc-600 cursor-not-allowed' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800'}" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
-                </div>
-            </div>
-        `;
-        paginationContainer.innerHTML = html;
-    }
+        function makePageBtn(i) {
+            const activeClass = i === currentPage 
+                ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
+                : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
+            return `<button onclick="changePage(event, ${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
+        }
 
-    function makePageBtn(i) {
-        const activeClass = i === currentPage 
-            ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20' 
-            : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800';
-        return `<button onclick="changePage(event, ${i})" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeClass}">${i}</button>`;
-    }
+        window.changePage = function(event, page) {
+            event.stopPropagation(); 
+            currentPage = page;
+            updateTable();
+        }
 
-    function changePage(event, page) {
-        event.stopPropagation(); 
-        currentPage = page;
+        searchInput.addEventListener('input', () => {
+            currentPage = 1; 
+            updateTable();
+        });
+
+        // Initialize table
         updateTable();
     }
-
-    searchInput.addEventListener('input', () => {
-        currentPage = 1; 
-        updateTable();
-    });
-
-    updateTable();
 
     // ------------------------------------
 
