@@ -60,12 +60,12 @@ if (isset($_SESSION['admin_id'])) {
             <form id="login-form">
                 
                 <div class="mb-5">
-                    <label for="identifier" class="block text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">Username or Email</label>
+                    <label for="email" class="block text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">Email Address</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-zinc-500">
-                            <i class="fa-solid fa-user text-sm"></i>
+                            <i class="fa-solid fa-envelope text-sm"></i>
                         </span>
-                        <input type="text" id="identifier" required placeholder="Enter username or email address" 
+                        <input type="email" id="email" required placeholder="Enter your registered email" 
                                class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-300 placeholder-gray-400 dark:placeholder-zinc-600 text-sm">
                     </div>
                 </div>
@@ -107,7 +107,7 @@ if (isset($_SESSION['admin_id'])) {
 
     <div id="global-alert-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeGlobalAlert()"></div>
-        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
+        <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-sm shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-zinc-800 transform scale-95 opacity-0 transition-all duration-200" id="global-alert-box">
             <div class="p-6 text-center">
                 <div id="global-alert-icon-wrapper" class="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-rose-200 dark:border-rose-500/30">
                     <i id="global-alert-icon" class="fa-solid fa-circle-xmark"></i>
@@ -122,7 +122,6 @@ if (isset($_SESSION['admin_id'])) {
     </div>
 
     <script>
-        // --- CUSTOM ALERT LOGIC ---
         function customAlert(message) {
             const modal = document.getElementById('global-alert-modal');
             const box = document.getElementById('global-alert-box');
@@ -145,29 +144,25 @@ if (isset($_SESSION['admin_id'])) {
 
         const loginForm = document.getElementById('login-form');
     
-        // 1. Listen for the form submission
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault(); 
         
-            // 2. Grab the inputs
-            const identifierInput = document.getElementById('identifier').value;
+            const emailInput = document.getElementById('email').value;
             const passwordInput = document.getElementById('password').value;
             
             const loginBtn = document.getElementById('login-btn');
             const originalBtnText = loginBtn.innerHTML;
         
-            // 3. UI Update: Show the loading state
             loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
             loginBtn.disabled = true; 
             loginBtn.classList.add('opacity-75', 'cursor-not-allowed');
         
             try {
-                // 4. Send the data to your PHP file in the background
                 const response = await fetch('actions/login.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        identifier: identifierInput, // 🚨 UPDATED payload key
+                        email: emailInput,
                         password: passwordInput
                     })
                 });
@@ -177,7 +172,7 @@ if (isset($_SESSION['admin_id'])) {
                 if (data.success) {
                     window.location.href = 'index.php'; 
                 } else {
-                    customAlert(data.message || 'Invalid username or password.');
+                    customAlert(data.message || 'Invalid email or password.');
                     resetButton();
                 }
         
@@ -193,7 +188,6 @@ if (isset($_SESSION['admin_id'])) {
             }
         });
     
-        // --- Dark Mode Toggle Logic ---
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const htmlElement = document.documentElement;
@@ -206,7 +200,6 @@ if (isset($_SESSION['admin_id'])) {
             themeToggleBtn.addEventListener('click', () => {
                 htmlElement.classList.toggle('dark');
                 const isDark = htmlElement.classList.contains('dark');
-                
                 localStorage.theme = isDark ? 'dark' : 'light';
                 updateToggleUI(isDark);
             });

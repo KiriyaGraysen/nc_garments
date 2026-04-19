@@ -20,18 +20,17 @@ if ($data) {
     $id = !empty($data['admin_id']) ? (int)$data['admin_id'] : null;
     $name = trim($data['full_name']);
     $email = trim($data['email']);
-    $username = trim($data['username']);
     $role = trim($data['role']);
 
     $actor_id = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : 0;
 
-    // Check if username already exists (excluding the current user being edited)
-    $check = $conn->prepare("SELECT admin_id FROM admin WHERE username = ? AND admin_id != ?");
+    // 🚨 CHECK IF EMAIL ALREADY EXISTS
+    $check = $conn->prepare("SELECT admin_id FROM admin WHERE email = ? AND admin_id != ?");
     $check_id = $id ?? 0;
-    $check->bind_param("si", $username, $check_id);
+    $check->bind_param("si", $email, $check_id);
     $check->execute();
     if ($check->get_result()->num_rows > 0) {
-        echo json_encode(["status" => "error", "message" => "Username already exists."]);
+        echo json_encode(["status" => "error", "message" => "This email address is already in use by another account."]);
         exit();
     }
 
@@ -45,14 +44,14 @@ if ($data) {
             // ==========================================
             
             // 1. Fetch "Before" Snapshot
-            $old_stmt = $conn->prepare("SELECT full_name, email, username, role FROM admin WHERE admin_id = ?");
+            $old_stmt = $conn->prepare("SELECT full_name, email, role FROM admin WHERE admin_id = ?");
             $old_stmt->bind_param("i", $id);
             $old_stmt->execute();
             $old_data = $old_stmt->get_result()->fetch_assoc();
 
-            // 2. Execute Update (No password logic here anymore!)
-            $stmt = $conn->prepare("UPDATE admin SET full_name=?, email=?, username=?, role=? WHERE admin_id=?");
-            $stmt->bind_param("ssssi", $name, $email, $username, $role, $id);
+            // 2. Execute Update
+            $stmt = $conn->prepare("UPDATE admin SET full_name=?, email=?, role=? WHERE admin_id=?");
+            $stmt->bind_param("sssi", $name, $email, $role, $id);
             $stmt->execute();
 
             // 3. Calculate Deltas and Log
@@ -61,7 +60,6 @@ if ($data) {
                 
                 if ($old_data['full_name'] !== $name) $changes[] = ['field' => 'Full Name', 'old' => $old_data['full_name'], 'new' => $name];
                 if ($old_data['email'] !== $email) $changes[] = ['field' => 'Email Address', 'old' => $old_data['email'], 'new' => $email];
-                if ($old_data['username'] !== $username) $changes[] = ['field' => 'Username', 'old' => '@' . $old_data['username'], 'new' => '@' . $username];
                 if ($old_data['role'] !== $role) $changes[] = ['field' => 'System Role', 'old' => strtoupper($old_data['role']), 'new' => strtoupper($role)];
                 
                 // Only log if something actually changed
@@ -72,7 +70,7 @@ if ($data) {
                         'is_detailed' => true,
                         'type' => 'update_comparison',
                         'summary' => "Modified $change_count field(s) in staff account.",
-                        'project' => $name . " (@" . $username . ")", 
+                        'project' => $name . " (" . $email . ")", 
                         'changes' => $changes
                     ]);
 
@@ -96,8 +94,8 @@ if ($data) {
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
             // 2. Insert into Database
-            $stmt = $conn->prepare("INSERT INTO admin (full_name, email, username, role, password_hash, status) VALUES (?, ?, ?, ?, ?, 'active')");
-            $stmt->bind_param("sssss", $name, $email, $username, $role, $hashed_password);
+            $stmt = $conn->prepare("INSERT INTO admin (full_name, email, role, password_hash, status) VALUES (?, ?, ?, ?, 'active')");
+            $stmt->bind_param("ssss", $name, $email, $role, $hashed_password);
             $stmt->execute();
             
             $new_id = $conn->insert_id;
@@ -113,7 +111,7 @@ if ($data) {
                 $mail->Username   = 'kiriyaokazaki56@gmail.com';       
                 $mail->Password   = 'ylap xqtb kqsa wkre';          
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
-                $mail->Port       = 587;                          
+                $mail->Port       = 587;                            
 
                 // --- RECIPIENTS ---
                 $mail->setFrom('noreply@ncgarments.com', 'NC Garments Admin');
@@ -130,8 +128,8 @@ if ($data) {
                         <p>An administrator has provisioned a new <strong>" . strtoupper($role) . "</strong> account for you in the NC Garments system.</p>
                         
                         <div style='background-color: #f9fafb; padding: 15px; border-radius: 6px; margin: 20px 0;'>
-                            <p style='margin: 0; font-size: 14px; color: #6b7280;'>Your Login Username:</p>
-                            <p style='margin: 5px 0 15px 0; font-size: 18px; font-weight: bold; color: #111827;'>{$username}</p>
+                            <p style='margin: 0; font-size: 14px; color: #6b7280;'>Your Login Email:</p>
+                            <p style='margin: 5px 0 15px 0; font-size: 18px; font-weight: bold; color: #111827;'>{$email}</p>
                             
                             <p style='margin: 0; font-size: 14px; color: #6b7280;'>Your Temporary Password:</p>
                             <p style='margin: 5px 0 0 0; font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #111827;'>{$new_password}</p>
@@ -143,7 +141,7 @@ if ($data) {
                     </div>
                 ";
                 
-                $mail->AltBody = "Hello {$name},\n\nAn administrator has provisioned a new {$role} account for you.\n\nUsername: {$username}\nTemporary Password: {$new_password}\n\nPlease log in and change this password immediately in your Account Settings.\n\nBest regards,\nNC Garments Team";
+                $mail->AltBody = "Hello {$name},\n\nAn administrator has provisioned a new {$role} account for you.\n\nLogin Email: {$email}\nTemporary Password: {$new_password}\n\nPlease log in and change this password immediately in your Account Settings.\n\nBest regards,\nNC Garments Team";
 
                 $mail->send();
             } catch (Exception $e) {
@@ -154,7 +152,7 @@ if ($data) {
             // 4. Log the Creation
             if ($actor_id > 0) {
                 $role_upper = strtoupper($role);
-                $description = "Provisioned new staff account: $name (@$username) with role $role_upper. Login details emailed.";
+                $description = "Provisioned new staff account: $name ($email) with role $role_upper. Login details emailed.";
 
                 $log_stmt = $conn->prepare("INSERT INTO activity_log (admin_id, action, target_table, target_id, description) VALUES (?, 'CREATE', 'admin', ?, ?)");
                 $log_stmt->bind_param("iis", $actor_id, $new_id, $description);

@@ -59,7 +59,7 @@ try {
     }
 
     // 2. GET TARGET USER INFO (We need the email now!)
-    $target_stmt = $conn->prepare("SELECT username, full_name, email FROM admin WHERE admin_id = ?");
+    $target_stmt = $conn->prepare("SELECT full_name, email FROM admin WHERE admin_id = ?");
     $target_stmt->bind_param("i", $target_id);
     $target_stmt->execute();
     $target_result = $target_stmt->get_result();
@@ -125,7 +125,7 @@ try {
     }
 
     // 6. LOG THE SECURITY EVENT
-    $log_desc = "Triggered a secure password reset for " . $target_user['full_name'] . " (@" . $target_user['username'] . "). A new password was emailed to them.";
+    $log_desc = "Triggered a secure password reset for " . $target_user['full_name'] . ". A new password was emailed to them.";
     
     $log_stmt = $conn->prepare("INSERT INTO activity_log (admin_id, action, target_table, target_id, description) VALUES (?, 'UPDATE', 'admin', ?, ?)");
     $log_stmt->bind_param("iis", $superadmin_id, $target_id, $log_desc);

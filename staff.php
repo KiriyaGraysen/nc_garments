@@ -25,9 +25,9 @@ if ($view === 'archived') {
     }
 }
 
-// 2. Fetch Data
+// 2. Fetch Data (Removed 'username')
 $stmt = $conn->prepare("
-    SELECT admin_id, full_name, email, username, role, status, last_login
+    SELECT admin_id, full_name, email, role, status, last_login
     FROM admin
     $where_sql
     ORDER BY full_name ASC
@@ -60,9 +60,11 @@ include 'includes/header.php';
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-500">Staff Access Management</h2>
             <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1 transition-colors duration-500">Provision accounts, manage role permissions, and monitor system access.</p>
         </div>
+        <?php if ($view !== 'archived'): ?>
         <button onclick="openStaffModal()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-pink-600/20 flex items-center gap-2 cursor-pointer focus:outline-none">
             <i class="fa-solid fa-user-plus"></i> Provision New Account
         </button>
+        <?php endif; ?>
     </div>
 
     <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
@@ -70,7 +72,7 @@ include 'includes/header.php';
             <div class="relative w-full group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
                 
-                <input type="text" id="search-input" placeholder="Search by staff name or username..." readonly onfocus="this.removeAttribute('readonly');"
+                <input type="text" id="search-input" placeholder="Search by staff name or email..." readonly onfocus="this.removeAttribute('readonly');"
                        class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
             </div>
         </div>
@@ -123,7 +125,6 @@ include 'includes/header.php';
                         
                         $full_name = htmlspecialchars($staff['full_name']);
                         $user_initials = strtoupper(substr($full_name, 0, 2));
-                        $user = htmlspecialchars($staff['username']);
                         $email = htmlspecialchars($staff['email']);
                         $status = htmlspecialchars($staff['status']);
                         $role = htmlspecialchars($staff['role']);
@@ -149,12 +150,12 @@ include 'includes/header.php';
                             <tr class="staff-row hover:bg-gray-50/80 dark:hover:bg-zinc-800/30 transition-colors group ' . $row_class . '">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 rounded-full bg-pink-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-pink-600/20">
+                                        <div class="h-10 w-10 rounded-full bg-pink-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-pink-600/20 shrink-0">
                                             ' . $user_initials . '
                                         </div>
-                                        <div>
-                                            <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors">' . $full_name . ' ' . ($is_current_user ? '<span class="text-[10px] text-pink-500">(You)</span>' : '') . '</div>
-                                            <div class="text-xs font-bold tracking-wider text-gray-400 dark:text-zinc-500 mt-0.5">@' . $user . '</div>
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-gray-900 dark:text-white group-hover:text-pink-600 transition-colors truncate">' . $full_name . ' ' . ($is_current_user ? '<span class="text-[10px] text-pink-500">(You)</span>' : '') . '</div>
+                                            <div class="text-xs font-medium tracking-wide text-gray-500 dark:text-zinc-400 mt-0.5 truncate"><i class="fa-regular fa-envelope mr-1 border-none text-[10px]"></i>' . $email . '</div>
                                         </div>
                                     </div>
                                 </td>
@@ -182,7 +183,6 @@ include 'includes/header.php';
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-1.5">'; 
                         
-                        // 🚨 UPDATED: ALL ACTION BUTTONS ARE NOW ICONS WITH LEFT-SIDE TOOLTIPS
                         if ($view === 'archived') {
                             echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                       <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
@@ -195,7 +195,7 @@ include 'includes/header.php';
                         } else {
                             
                             // EDIT
-                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.addslashes($user).'\', \''.$role.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.$role.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
                                       <i class="fa-solid fa-pen-to-square transition-colors"></i>
                                       
                                       <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
@@ -283,24 +283,15 @@ include 'includes/header.php';
                     <input type="email" id="staff_email" required class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Username *</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-bold">@</span>
-                            <input type="text" id="staff_username" required class="w-full pl-8 pr-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">System Role *</label>
-                        <select id="staff_role" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
-                            <option value="staff">Staff</option>
-                            <?php if ($current_user_role === 'superadmin'): ?>
-                                <option value="admin">Admin</option>
-                                <option value="superadmin">Superadmin</option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">System Role *</label>
+                    <select id="staff_role" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
+                        <option value="staff">Staff</option>
+                        <?php if ($current_user_role === 'superadmin'): ?>
+                            <option value="admin">Admin</option>
+                            <option value="superadmin">Superadmin</option>
+                        <?php endif; ?>
+                    </select>
                 </div>
 
                 <div id="new_account_notice" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-xl p-3 flex gap-3">
@@ -510,14 +501,11 @@ include 'includes/header.php';
             const existingEmptyRow = document.getElementById('js-empty-state');
             const phpEmpty = document.getElementById('php-empty-state');
 
-            // 🚨 FIXED: Smart Empty State Logic (No Double Messages)
             if (totalItems === 0) {
                 if (phpEmpty && searchTerm === '') {
-                    // Database is empty
                     phpEmpty.style.display = '';
                     if (existingEmptyRow) existingEmptyRow.style.display = 'none';
                 } else {
-                    // Search is empty
                     if (phpEmpty) phpEmpty.style.display = 'none';
                     if (!existingEmptyRow) {
                         tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found matching your search.</td></tr>`);
@@ -588,12 +576,11 @@ include 'includes/header.php';
         updateTable();
     }
 
-    // --- STAFF MODAL LOGIC (NO PASSWORD INPUT) ---
-    function openStaffModal(id = '', name = '', email = '', username = '', role = 'staff') {
+    // --- STAFF MODAL LOGIC (NO USERNAME) ---
+    function openStaffModal(id = '', name = '', email = '', role = 'staff') {
         document.getElementById('staff_id').value = id;
         document.getElementById('staff_name').value = name;
         document.getElementById('staff_email').value = email;
-        document.getElementById('staff_username').value = username;
         document.getElementById('staff_role').value = role;
         
         if (id) {
@@ -616,11 +603,10 @@ include 'includes/header.php';
             admin_id: document.getElementById('staff_id').value,
             full_name: document.getElementById('staff_name').value,
             email: document.getElementById('staff_email').value,
-            username: document.getElementById('staff_username').value,
             role: document.getElementById('staff_role').value
         };
 
-        if (!payload.full_name || !payload.email || !payload.username) return customAlert("Please fill all required fields.", "Missing Fields", "error");
+        if (!payload.full_name || !payload.email) return customAlert("Please fill all required fields.", "Missing Fields", "error");
 
         try {
             const res = await fetch('actions/save_staff.php', {
@@ -631,7 +617,6 @@ include 'includes/header.php';
             if (data.status === 'success') {
                 closeStaffModal();
                 
-                // Show the generated password ONLY if a new account was created
                 if (data.generated_password) {
                     customAlert(`Account created successfully.\n\nSimulated Email Sent!\nTemporary Password: ${data.generated_password}`, "Account Provisioned", "success");
                 } else {
@@ -678,7 +663,6 @@ include 'includes/header.php';
             
             if (data.status === 'success') {
                 closeResetPasswordModal();
-                // 🚨 CHANGED: We now just display the success message from PHP
                 customAlert(data.message, "Password Reset & Emailed", "success");
             } else {
                 customAlert(data.message, "Verification Failed", "error");

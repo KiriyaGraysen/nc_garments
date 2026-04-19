@@ -13,24 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $json_data = file_get_contents('php://input');
 $request = json_decode($json_data, true);
 
-// 🚨 UPDATED: Accept 'identifier' which handles both Username or Email
-$input_identifier = $request['identifier'] ?? '';
+// 🚨 UPDATED: Using 'email' to match the new frontend payload
+$input_email = $request['email'] ?? '';
 $input_password = $request['password'] ?? '';
 
-if (empty($input_identifier) || empty($input_password)) {
-    echo json_encode(['success' => false, 'message' => 'Please fill in both username/email and password.']);
+if (empty($input_email) || empty($input_password)) {
+    echo json_encode(['success' => false, 'message' => 'Please fill in both email and password.']);
     exit();
 }
 
-// 🚨 SECURITY FIX: Check BOTH username OR email, and ensure the account is active/not archived!
+// 🚨 SECURITY FIX: Query strictly by email and ensure account is active
 $stmt = $conn->prepare("
     SELECT admin_id, full_name, password_hash, role
     FROM admin
-    WHERE (username = ? OR email = ?) AND is_archived = 0 AND status = 'active'
+    WHERE email = ? AND is_archived = 0 AND status = 'active'
 ");
 
-// Bind the identifier twice: once for the username check, once for the email check
-$stmt->bind_param("ss", $input_identifier, $input_identifier);
+$stmt->bind_param("s", $input_email);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -56,9 +55,9 @@ if ($result->num_rows === 1) {
         
         // 3. 🚨 LOG THE LOGIN ACTIVITY
         $action = 'LOGIN';
-        $target_table = 'admin'; // This triggers your "Security" tab filter
+        $target_table = 'admin'; 
         $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
-        $description = "User authenticated and started a secure session from IP: $ip_address.";
+        $description = "User authenticated via email and started a secure session from IP: $ip_address.";
         
         $log_stmt = $conn->prepare("INSERT INTO activity_log (admin_id, action, target_table, target_id, description) VALUES (?, ?, ?, ?, ?)");
         $log_stmt->bind_param("issis", $admin['admin_id'], $action, $target_table, $admin['admin_id'], $description);
@@ -67,7 +66,7 @@ if ($result->num_rows === 1) {
         
         echo json_encode(['success' => true, 'message' => 'Login successful.']);
     } else {
-        // We use the same generic error message to prevent "Username Enumeration" attacks
+        // Generic message for security
         echo json_encode(['success' => false, 'message' => 'Invalid credentials or account disabled.']);
     }
 } else {

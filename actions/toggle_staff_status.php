@@ -15,7 +15,7 @@ if ($data && isset($data['admin_id'])) {
     }
 
     // 2. FETCH STAFF DETAILS & OLD STATUS BEFORE UPDATE
-    $fetch_stmt = $conn->prepare("SELECT full_name, username, status FROM admin WHERE admin_id = ?");
+    $fetch_stmt = $conn->prepare("SELECT full_name, status FROM admin WHERE admin_id = ?");
     $fetch_stmt->bind_param("i", $target_id);
     $fetch_stmt->execute();
     $staff = $fetch_stmt->get_result()->fetch_assoc();
@@ -40,7 +40,7 @@ if ($data && isset($data['admin_id'])) {
             $target_table = 'admin'; // Routes to the Security tab
             
             // Format for your smart regex: "from [old] to [new]"
-            $description = "Changed access status for $staff_name (@{$staff['username']}) from $old_status to $new_status.";
+            $description = "Changed access status for $staff_name from $old_status to $new_status.";
             
             $log_stmt = $conn->prepare("INSERT INTO activity_log (admin_id, action, target_table, target_id, description) VALUES (?, ?, ?, ?, ?)");
             $log_stmt->bind_param("issis", $actor_id, $action, $target_table, $target_id, $description);

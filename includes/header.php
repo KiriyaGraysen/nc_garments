@@ -9,7 +9,7 @@ if (empty($_SESSION['admin_id'])) {
 
 // 🚨 Added 'email' to your SELECT just in case you use it later!
 $stmt = $conn->prepare("
-    SELECT full_name, username, email, role
+    SELECT full_name, email, role
     FROM admin
     WHERE admin_id = ?
 ");
@@ -307,7 +307,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         
                         <div class="px-4 py-3 border-b border-gray-50 dark:border-zinc-800/50">
                             <p class="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Signed in as</p>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5"><?php echo htmlspecialchars($admin['username']); ?></p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5"><?php echo htmlspecialchars($admin['email']); ?></p>
                         </div>
                 
                         <div class="py-1">
