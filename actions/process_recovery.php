@@ -62,7 +62,7 @@ $log_stmt->execute();
 
 
 // 4. Construct the reset link (UPDATE THIS TO YOUR ACTUAL LOCALHOST URL)
-$reset_link = "http://localhost/nc-garments/reset-password.php?token=" . $token;
+$reset_link = "https://nc-garments.gt.tc/reset_password.php?token=" . $token;
 
 // 5. Send the Email using PHPMailer
 $mail = new PHPMailer(true);
