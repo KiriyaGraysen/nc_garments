@@ -11,6 +11,13 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_name = $_SESSION['full_name'] ?? 'Admin';
 $first_name = explode(' ', trim($admin_name))[0];
 
+// 🚨 FIRST LOGIN MODAL TRIGGER LOGIC
+$show_first_login_modal = false;
+if (isset($_SESSION['is_first_login']) && $_SESSION['is_first_login'] === true) {
+    $show_first_login_modal = true;
+    unset($_SESSION['is_first_login']); // Remove the flag so it only shows once per session!
+}
+
 // ========================================================
 // 1. TOP STATS CALCULATIONS (Now successfully merging Retail & Projects)
 // ========================================================
@@ -268,11 +275,9 @@ include 'includes/header.php';
                             $rev = $m['revenue'];
                             $cost = $m['cost'];
                             
-                            // Calculate heights for side-by-side bars relative to the global max
                             $rev_h = ($max_val > 0) ? ($rev / $max_val) * 100 : 0;
                             $cost_h = ($max_val > 0) ? ($cost / $max_val) * 100 : 0;
                             
-                            // Give tiny visual bumps to 0 values so they don't completely vanish
                             if ($rev_h < 2 && $rev > 0) $rev_h = 2;
                             if ($cost_h < 2 && $cost > 0) $cost_h = 2;
                             
@@ -433,6 +438,38 @@ include 'includes/header.php';
                 </div>
             </div>
         </div>
+
+        <?php if ($show_first_login_modal): ?>
+        <div id="first-login-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeFirstLoginModal()"></div>
+            <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-pink-200 dark:border-pink-800/50 transform transition-all duration-300 scale-100 opacity-100">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-pink-200 dark:border-pink-500/30">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Welcome, <?= htmlspecialchars($first_name) ?>!</h3>
+                    <p class="text-sm font-medium text-gray-600 dark:text-zinc-400 leading-relaxed mb-6">
+                        It looks like this is your first time logging in. For your security, we highly recommend changing your temporary password to something only you know.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="closeFirstLoginModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none flex-1">
+                            Not Now
+                        </button>
+                        <a href="settings.php" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md focus:outline-none transition-all flex-1 flex items-center justify-center gap-2">
+                            Go to Settings <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            function closeFirstLoginModal() {
+                const modal = document.getElementById('first-login-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => modal.remove(), 300);
+            }
+        </script>
+        <?php endif; ?>
 
         <script>
             const calendarData = <?php echo json_encode($calendar_projects); ?>;

@@ -18,15 +18,15 @@ header('Content-Type: application/json');
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!isset($data['recovery_id']) || empty(trim($data['recovery_id']))) {
-    echo json_encode(["status" => "error", "message" => "Please enter a username or email."]);
+    echo json_encode(["status" => "error", "message" => "Please enter your email address."]);
     exit;
 }
 
 $recovery_id = trim($data['recovery_id']);
 
-// 2. Find the user by either username OR email
-$stmt = $conn->prepare("SELECT admin_id, full_name, email FROM admin WHERE username = ? OR email = ?");
-$stmt->bind_param("ss", $recovery_id, $recovery_id);
+// 2. Find the user by EMAIL ONLY (and ensure account is active)
+$stmt = $conn->prepare("SELECT admin_id, full_name, email FROM admin WHERE email = ? AND is_archived = 0 AND status = 'active'");
+$stmt->bind_param("s", $recovery_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -42,7 +42,7 @@ $user = $result->fetch_assoc();
 $token = bin2hex(random_bytes(32)); 
 $expires = date("Y-m-d H:i:s", strtotime('+1 hour'));
 
-// Save token to database
+// Save token to database (Leaving column names as reset_token and reset_expires)
 $update_stmt = $conn->prepare("UPDATE admin SET reset_token = ?, reset_expires = ? WHERE admin_id = ?");
 $update_stmt->bind_param("ssi", $token, $expires, $user['admin_id']);
 $update_stmt->execute();

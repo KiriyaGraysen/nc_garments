@@ -22,9 +22,9 @@ if (empty($input_email) || empty($input_password)) {
     exit();
 }
 
-// 🚨 SECURITY FIX: Query strictly by email and ensure account is active
+// 🚨 SECURITY FIX: Query strictly by email, ensure account is active, and fetch last_login
 $stmt = $conn->prepare("
-    SELECT admin_id, full_name, password_hash, role
+    SELECT admin_id, full_name, password_hash, role, last_login
     FROM admin
     WHERE email = ? AND is_archived = 0 AND status = 'active'
 ");
@@ -40,6 +40,9 @@ if ($result->num_rows === 1) {
         
         // Force the browser to accept the new secure session token
         session_regenerate_id(true); 
+        
+        // 🚨 ADDED: Check if this is their first time logging in BEFORE updating the timestamp
+        $_SESSION['is_first_login'] = empty($admin['last_login']);
         
         // 1. Update the Last Login timestamp
         $last_login = date("Y-m-d H:i:s");
