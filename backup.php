@@ -2,6 +2,12 @@
 $page_title = "Backup Database | NC Garments";
 require_once('config/database.php');
 
+// SECURITY KICK-OUT
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+    header("Location: index.php");
+    exit();
+}
+
 // Fetch the logs using a LEFT JOIN to get the admin's name
 $log_stmt = $conn->prepare("
     SELECT 

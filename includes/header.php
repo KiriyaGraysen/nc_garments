@@ -335,7 +335,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-950/30">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-book-open text-pink-600 mr-2"></i> System User Manual</h3>
                     <div class="flex gap-3">
-                        <a href="manual.pdf" target="_blank" class="text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 dark:bg-pink-500/10 dark:hover:bg-pink-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                        <a href="assets/docs/manual.pdf" target="_blank" class="text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 dark:bg-pink-500/10 dark:hover:bg-pink-500/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
                         </a>
                         <button onclick="closeManualModal()" class="text-gray-400 hover:text-rose-500 transition-colors focus:outline-none ml-2">
@@ -344,7 +344,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </div>
                 </div>
                 <div class="p-0 bg-gray-100 dark:bg-black h-[75vh]">
-                    <iframe src="manual.pdf" class="w-full h-full border-0"></iframe>
+                    <iframe src="assets/docs/manual.pdf" class="w-full h-full border-0"></iframe>
                 </div>
             </div>
         </div>
