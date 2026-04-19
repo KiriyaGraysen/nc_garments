@@ -1,22 +1,22 @@
 <?php
 require_once('config/database.php');
 
-// SECURITY KICK-OUT: Let both Admins and Superadmins access the management page
+// SECURITY KICK-OUT
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     header("Location: index.php");
     exit();
 }
 
+$current_user_role = $_SESSION['role'];
+$current_user_id = $_SESSION['admin_id'];
 $page_title = "Staff Access | NC Garments";
 
 // 1. Determine Tab View and Dynamic SQL
 $view = $_GET['view'] ?? 'all';
 
 if ($view === 'archived') {
-    // If viewing archived, ONLY show archived accounts
     $where_sql = "WHERE is_archived = 1";
 } else {
-    // Otherwise, only show active accounts and filter by status
     $where_sql = "WHERE is_archived = 0";
     if ($view === 'active') {
         $where_sql .= " AND status = 'active'";
@@ -60,19 +60,17 @@ include 'includes/header.php';
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-500">Staff Access Management</h2>
             <p class="text-gray-500 dark:text-zinc-400 text-sm mt-1 transition-colors duration-500">Provision accounts, manage role permissions, and monitor system access.</p>
         </div>
-        <?php if ($view !== 'archived'): ?>
         <button onclick="openStaffModal()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg shadow-pink-600/20 flex items-center gap-2 cursor-pointer focus:outline-none">
             <i class="fa-solid fa-user-plus"></i> Provision New Account
         </button>
-        <?php endif; ?>
     </div>
 
     <div class="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
-        
         <div class="flex w-full lg:w-auto gap-3 flex-1 max-w-2xl">
             <div class="relative w-full group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-pink-600 transition-colors duration-500"></i>
-                <input type="text" id="search-input" placeholder="Search by staff name or username..." 
+                
+                <input type="text" id="search-input" placeholder="Search by staff name or username..." readonly onfocus="this.removeAttribute('readonly');"
                        class="w-full pl-11 pr-4 py-3 border border-gray-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-500 shadow-sm text-sm font-medium">
             </div>
         </div>
@@ -114,6 +112,7 @@ include 'includes/header.php';
                 <tbody id="staff-tbody" class="divide-y divide-gray-50 dark:divide-zinc-800/50 text-sm transition-colors duration-500">
                     
                     <?php
+                    // 🚨 PHP Empty State
                     if ($staff_result->num_rows === 0) {
                         echo '<tr id="php-empty-state"><td colspan="5" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found in this view.</td></tr>';
                     }
@@ -129,7 +128,6 @@ include 'includes/header.php';
                         $status = htmlspecialchars($staff['status']);
                         $role = htmlspecialchars($staff['role']);
                         
-                        // Dynamic styling based on the new roles
                         $role_class = '';
                         $role_icon = '';
                         
@@ -144,10 +142,7 @@ include 'includes/header.php';
                             $role_icon = 'fa-user';
                         }
 
-                        // Safety check: Is this row the current logged-in user?
-                        $is_current_user = ($staff['admin_id'] == $_SESSION['admin_id']);
-                        
-                        // If it's archived, grayscale the entire row
+                        $is_current_user = ($staff['admin_id'] == $current_user_id);
                         $row_class = ($view === 'archived' || $status === 'deactivated') ? 'opacity-60 grayscale-[50%]' : '';
                         
                         echo '
@@ -185,32 +180,72 @@ include 'includes/header.php';
                                 <td class="px-6 py-4">
                                     <div class="text-gray-900 dark:text-white font-bold text-xs">' . $formatted_login . '</div>
                                 </td>
-                                <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-2">';
+                                <td class="px-6 py-4 text-right text-sm font-medium flex justify-end gap-1.5">'; 
                         
+                        // 🚨 UPDATED: ALL ACTION BUTTONS ARE NOW ICONS WITH LEFT-SIDE TOOLTIPS
                         if ($view === 'archived') {
-                            // If viewing archived, only show the Unarchive button
-                            echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
-                                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Restore
+                            echo '<button onclick="restoreStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                      <i class="fa-solid fa-clock-rotate-left transition-colors"></i>
+                                      
+                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                          Restore
+                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                      </span>
                                   </button>';
                         } else {
-                            // Standard Actions
-                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.addslashes($user).'\', \''.$role.'\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:text-pink-600 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
-                                    <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
+                            
+                            // EDIT
+                            echo '<button onclick="openStaffModal('.$staff['admin_id'].', \''.addslashes($full_name).'\', \''.addslashes($email).'\', \''.addslashes($user).'\', \''.$role.'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-blue-300 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                      <i class="fa-solid fa-pen-to-square transition-colors"></i>
+                                      
+                                      <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                          Edit
+                                          <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                      </span>
                                   </button>';
                                   
+                            // RESET PASSWORD
+                            if ($current_user_role === 'superadmin' && !$is_current_user) {
+                                echo '<button onclick="openResetPasswordModal('.$staff['admin_id'].', \''.addslashes($full_name).'\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-purple-300 text-gray-400 hover:text-purple-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-key transition-colors"></i>
+                                          
+                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                              Reset Password
+                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                          </span>
+                                      </button>';
+                            }
+                                  
                             if (!$is_current_user) {
+                                // REVOKE / RESTORE STATUS
                                 if ($status === 'active') {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
-                                            <i class="fa-solid fa-ban mr-1"></i> Revoke
+                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'deactivated\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-rose-300 text-gray-400 hover:text-rose-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-ban transition-colors"></i>
+                                              
+                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                  Revoke Access
+                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                              </span>
                                           </button>';
                                 } else {
-                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm focus:outline-none">
-                                            <i class="fa-solid fa-unlock-keyhole mr-1"></i> Restore
+                                    echo '<button onclick="toggleStatus('.$staff['admin_id'].', \'active\')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-emerald-300 text-gray-400 hover:text-emerald-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                              <i class="fa-solid fa-unlock-keyhole transition-colors"></i>
+                                              
+                                              <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                                  Restore Access
+                                                  <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                              </span>
                                           </button>';
                                 }
                                 
-                                echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="text-gray-400 hover:text-amber-500 focus:outline-none p-1 ml-1" title="Archive Account">
-                                        <i class="fa-solid fa-box-archive"></i>
+                                // ARCHIVE
+                                echo '<button onclick="deleteStaff('.$staff['admin_id'].')" class="relative group/btn flex items-center justify-center w-8 h-8 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-amber-300 text-gray-400 hover:text-amber-500 rounded-lg transition-all duration-300 shadow-sm focus:outline-none">
+                                          <i class="fa-solid fa-box-archive transition-colors"></i>
+                                          
+                                          <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1 text-[10px] font-bold text-white bg-gray-900 dark:bg-black rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center">
+                                              Archive
+                                              <span class="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900 dark:border-l-black"></span>
+                                          </span>
                                       </button>';
                             }
                         }
@@ -221,7 +256,6 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
-        
         <div id="pagination-container" class="w-full bg-gray-50/50 dark:bg-zinc-950/30 rounded-b-2xl transition-colors duration-500"></div>
     </div>
 </main>
@@ -261,22 +295,47 @@ include 'includes/header.php';
                         <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">System Role *</label>
                         <select id="staff_role" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
                             <option value="staff">Staff</option>
-                            <option value="admin">Admin</option>
-                            <option value="superadmin">Superadmin</option>
+                            <?php if ($current_user_role === 'superadmin'): ?>
+                                <option value="admin">Admin</option>
+                                <option value="superadmin">Superadmin</option>
+                            <?php endif; ?>
                         </select>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 dark:text-zinc-400 mb-2 uppercase tracking-wide">Password <span id="pass_req" class="text-rose-500">*</span></label>
-                    <input type="password" id="staff_password" placeholder="Leave blank to keep current password" class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-medium">
-                    <p class="text-[10px] text-gray-400 mt-1" id="pass_hint">Required for new accounts. Minimum 6 characters.</p>
+                <div id="new_account_notice" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-xl p-3 flex gap-3">
+                    <i class="fa-solid fa-envelope text-blue-500 mt-0.5"></i>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 font-medium">A secure random password will be generated and automatically emailed to the user upon creation.</p>
                 </div>
+
             </form>
         </div>
         <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
             <button onclick="closeStaffModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
             <button onclick="saveStaff()" class="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md focus:outline-none">Save Account</button>
+        </div>
+    </div>
+</div>
+
+<div id="reset-password-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeResetPasswordModal()"></div>
+    <div class="relative bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-purple-200 dark:border-purple-800">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3 bg-purple-50/50 dark:bg-purple-900/10">
+            <div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></div>
+            <div>
+                <h3 class="text-sm font-bold text-gray-900 dark:text-white">Security Verification</h3>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Resetting: <span id="reset_target_name" class="text-purple-600">Name</span></p>
+            </div>
+        </div>
+        <div class="p-6">
+            <input type="hidden" id="reset_target_id">
+            <p class="text-xs text-gray-600 dark:text-zinc-400 mb-4 leading-relaxed">To generate a new random password for this user, please verify your identity by entering your <strong>Superadmin password</strong>.</p>
+            
+            <input type="password" id="verify_admin_password" autocomplete="new-password" placeholder="Enter your password..." class="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-medium mb-2">
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/30 flex justify-end gap-3">
+            <button onclick="closeResetPasswordModal()" class="px-5 py-2.5 text-sm font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl transition-colors focus:outline-none">Cancel</button>
+            <button onclick="confirmResetPassword()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md focus:outline-none">Verify & Reset</button>
         </div>
     </div>
 </div>
@@ -315,9 +374,7 @@ include 'includes/header.php';
 </div>
 
 <script>
-    // ==========================================
-    // 0. GLOBAL UI OVERRIDES
-    // ==========================================
+    // --- GLOBAL MODAL OVERRIDES (Alert & Confirm) ---
     function customAlert(message, title = "Notice", type = "info") {
         const modal = document.getElementById('global-alert-modal');
         const box = document.getElementById('global-alert-box');
@@ -419,7 +476,6 @@ include 'includes/header.php';
         });
     }
 
-    // Overwrite the native functions
     window.alert = customAlert;
 
     // --- Search & Pagination Logic ---
@@ -436,7 +492,6 @@ include 'includes/header.php';
 
         function updateTable() {
             const searchTerm = searchInput.value.toLowerCase();
-            
             const filteredRows = allRows.filter(row => {
                 const text = row.innerText.toLowerCase();
                 return text.includes(searchTerm);
@@ -444,31 +499,36 @@ include 'includes/header.php';
 
             const totalItems = filteredRows.length;
             const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
-            
             if (currentPage > totalPages) currentPage = 1;
 
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = startIndex + rowsPerPage;
 
             allRows.forEach(row => row.style.display = 'none');
-
-            filteredRows.slice(startIndex, endIndex).forEach(row => {
-                row.style.display = '';
-            });
+            filteredRows.slice(startIndex, endIndex).forEach(row => row.style.display = '');
 
             const existingEmptyRow = document.getElementById('js-empty-state');
+            const phpEmpty = document.getElementById('php-empty-state');
+
+            // 🚨 FIXED: Smart Empty State Logic (No Double Messages)
             if (totalItems === 0) {
-                if (!existingEmptyRow) {
-                    tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found matching your search.</td></tr>`);
+                if (phpEmpty && searchTerm === '') {
+                    // Database is empty
+                    phpEmpty.style.display = '';
+                    if (existingEmptyRow) existingEmptyRow.style.display = 'none';
                 } else {
-                    existingEmptyRow.style.display = '';
+                    // Search is empty
+                    if (phpEmpty) phpEmpty.style.display = 'none';
+                    if (!existingEmptyRow) {
+                        tbody.insertAdjacentHTML('beforeend', `<tr id="js-empty-state"><td colspan="${colspanCount}" class="px-6 py-8 text-center text-gray-500 font-medium">No accounts found matching your search.</td></tr>`);
+                    } else {
+                        existingEmptyRow.style.display = '';
+                    }
                 }
             } else {
                 if (existingEmptyRow) existingEmptyRow.style.display = 'none';
+                if (phpEmpty) phpEmpty.style.display = 'none';
             }
-
-            const phpEmpty = document.getElementById('php-empty-state');
-            if(phpEmpty && allRows.length > 0) phpEmpty.style.display = 'none';
 
             renderPagination(totalItems, totalPages);
         }
@@ -525,27 +585,23 @@ include 'includes/header.php';
             updateTable();
         });
 
-        // Initialize table
         updateTable();
     }
 
-
+    // --- STAFF MODAL LOGIC (NO PASSWORD INPUT) ---
     function openStaffModal(id = '', name = '', email = '', username = '', role = 'staff') {
         document.getElementById('staff_id').value = id;
         document.getElementById('staff_name').value = name;
         document.getElementById('staff_email').value = email;
         document.getElementById('staff_username').value = username;
         document.getElementById('staff_role').value = role;
-        document.getElementById('staff_password').value = '';
         
         if (id) {
             document.getElementById('modal_title').textContent = "Edit Staff Account";
-            document.getElementById('pass_req').classList.add('hidden');
-            document.getElementById('staff_password').placeholder = "Leave blank to keep current password";
+            document.getElementById('new_account_notice').classList.add('hidden');
         } else {
             document.getElementById('modal_title').textContent = "Provision New Account";
-            document.getElementById('pass_req').classList.remove('hidden');
-            document.getElementById('staff_password').placeholder = "Enter initial password";
+            document.getElementById('new_account_notice').classList.remove('hidden');
         }
         
         document.getElementById('staff-modal').classList.remove('hidden');
@@ -561,28 +617,81 @@ include 'includes/header.php';
             full_name: document.getElementById('staff_name').value,
             email: document.getElementById('staff_email').value,
             username: document.getElementById('staff_username').value,
-            role: document.getElementById('staff_role').value,
-            password: document.getElementById('staff_password').value
+            role: document.getElementById('staff_role').value
         };
 
         if (!payload.full_name || !payload.email || !payload.username) return customAlert("Please fill all required fields.", "Missing Fields", "error");
-        if (!payload.admin_id && !payload.password) return customAlert("Password is required for new accounts.", "Missing Password", "error");
 
         try {
             const res = await fetch('actions/save_staff.php', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await res.json();
+            
             if (data.status === 'success') {
                 closeStaffModal();
-                customAlert("Account saved successfully.", "Success", "success");
-                setTimeout(() => window.location.reload(), 1500);
+                
+                // Show the generated password ONLY if a new account was created
+                if (data.generated_password) {
+                    customAlert(`Account created successfully.\n\nSimulated Email Sent!\nTemporary Password: ${data.generated_password}`, "Account Provisioned", "success");
+                } else {
+                    customAlert("Account updated successfully.", "Success", "success");
+                }
+                
+                setTimeout(() => window.location.reload(), 3000);
             } else {
                 customAlert("Error: " + data.message, "Error", "error");
             }
         } catch (e) { customAlert("Network Error", "Error", "error"); }
     }
 
+    // --- SECURE PASSWORD RESET LOGIC ---
+    function openResetPasswordModal(id, name) {
+        document.getElementById('reset_target_id').value = id;
+        document.getElementById('reset_target_name').textContent = name;
+        document.getElementById('verify_admin_password').value = '';
+        document.getElementById('reset-password-modal').classList.remove('hidden');
+    }
+
+    function closeResetPasswordModal() {
+        document.getElementById('reset-password-modal').classList.add('hidden');
+    }
+
+    async function confirmResetPassword() {
+        const payload = {
+            target_admin_id: document.getElementById('reset_target_id').value,
+            superadmin_password: document.getElementById('verify_admin_password').value
+        };
+
+        if (!payload.superadmin_password) return customAlert("You must enter your password to verify this action.", "Verification Failed", "error");
+
+        const btn = document.querySelector('#reset-password-modal button.bg-purple-600');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Sending...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('actions/reset_password.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.status === 'success') {
+                closeResetPasswordModal();
+                // 🚨 CHANGED: We now just display the success message from PHP
+                customAlert(data.message, "Password Reset & Emailed", "success");
+            } else {
+                customAlert(data.message, "Verification Failed", "error");
+            }
+        } catch (e) { 
+            customAlert("Network Error", "Error", "error"); 
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // --- STATUS TOGGLES ---
     async function toggleStatus(id, newStatus) {
         const actionText = newStatus === 'active' ? 'restore access for' : 'revoke access from';
         const type = newStatus === 'active' ? 'info' : 'danger';
@@ -612,8 +721,7 @@ include 'includes/header.php';
         
         try {
             const res = await fetch('actions/delete_staff.php', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ admin_id: id })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_id: id })
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -629,8 +737,7 @@ include 'includes/header.php';
         
         try {
             const res = await fetch('actions/restore_staff.php', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ admin_id: id })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_id: id })
             });
             const data = await res.json();
             if (data.status === 'success') {
